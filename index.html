@@ -93,47 +93,47 @@ svg{display:block;width:100%;height:auto}
 (function(){
 var GROUPS=[
  {t:'Domácnost',f:[
-  ['income','Čistý příjem domácnosti za měsíc (průměr)','Kč/měs',150000],
+  ['income','Čistý příjem domácnosti za měsíc (průměr)','Kč/měs',180000],
   ['other','Ostatní měsíční výdaje (jídlo, auto, děti, spoření)','Kč/měs',40000]
  ]},
  {t:'Starý byt dnes',f:[
-  ['oldBal','Zbývá doplatit hypotéku dnes','Kč',2500000],
-  ['oldRate','Úrok staré hypotéky dnes','% p. a.',2,2],
-  ['oldYears','Zbývající splatnost staré hypotéky dnes','let',25],
-  ['oldIns','Pojištění hypotéky dnes','Kč/měs',1200],
-  ['oldServ','Zálohy, energie a garáž dnes, když v něm bydlíte','Kč/měs',9500]
+  ['oldBal','Zbývá doplatit hypotéku dnes','Kč',3000000],
+  ['oldRate','Úrok staré hypotéky dnes','% p. a.',1.9,2],
+  ['oldYears','Zbývající splatnost staré hypotéky dnes','let',24],
+  ['oldIns','Pojištění hypotéky dnes','Kč/měs',1100],
+  ['oldServ','Zálohy, energie a garáž dnes, když v něm bydlíte','Kč/měs',13000]
  ]},
  {t:'Starý byt po refixaci (za rok)',f:[
   ['monthsFix','Za kolik měsíců končí fixace','měsíců',12],
-  ['rateAfter','Úrok staré hypotéky po refixaci (odhad)','% p. a.',4.8,2],
-  ['oldInsAfter','Pojištění hypotéky po refixaci','Kč/měs',1200],
-  ['oldServAfter','Zálohy, energie a garáž po refixaci, když v něm bydlíte','Kč/měs',9500],
-  ['oldValue','Cena, za kterou ho prodáte','Kč',7000000],
-  ['sellCost','Náklady prodeje (provize, právník)','Kč',230000]
+  ['rateAfter','Úrok staré hypotéky po refixaci (odhad)','% p. a.',4.79,2],
+  ['oldInsAfter','Pojištění hypotéky po refixaci','Kč/měs',1100],
+  ['oldServAfter','Zálohy, energie a garáž po refixaci, když v něm bydlíte','Kč/měs',13000],
+  ['oldValue','Cena, za kterou ho prodáte','Kč',8200000],
+  ['sellCost','Náklady prodeje (provize, právník)','Kč',0]
  ]},
  {t:'Nový byt',f:[
-  ['price','Kupní cena','Kč',11000000],
-  ['reno','Kuchyň, nábytek, stěhování, právník','Kč',300000],
-  ['newServ','Zálohy, energie a pojištění bytu','Kč/měs',11000]
+  ['price','Kupní cena','Kč',14000000],
+  ['reno','Kuchyň, nábytek, stěhování, právník','Kč',350000],
+  ['newServ','Zálohy, energie a pojištění bytu','Kč/měs',17000]
  ]},
  {t:'Úspory',f:[
-  ['savings','Úspory a investice celkem','Kč',1500000],
-  ['usedA','Z nich vložíte do koupě, když starý byt prodáte','Kč',0],
-  ['usedB','Z nich vložíte do koupě, když starý byt necháte','Kč',1500000]
+  ['savings','Úspory a investice celkem','Kč',2000000],
+  ['usedA','Z nich vložíte do koupě, když starý byt prodáte','Kč',1000000],
+  ['usedB','Z nich vložíte do koupě, když starý byt necháte','Kč',1000000]
  ]},
  {t:'Nová hypotéka',f:[
-  ['rateA','Úrok, když starý byt prodáte','% p. a.',4.8,2],
-  ['rateB','Úrok, když starý byt necháte','% p. a.',5.3,2],
+  ['rateA','Úrok, když starý byt prodáte','% p. a.',5,2],
+  ['rateB','Úrok, když starý byt necháte','% p. a.',5,2],
   ['term','Splatnost','let',30],
-  ['insA','Pojištění hypotéky, když starý byt prodáte','Kč/měs',4000],
-  ['insB','Pojištění hypotéky, když starý byt necháte','Kč/měs',3000]
+  ['insA','Pojištění hypotéky, když starý byt prodáte','Kč/měs',5000],
+  ['insB','Pojištění hypotéky, když starý byt necháte','Kč/měs',6500]
  ]},
  {t:'Pronájem starého bytu',f:[
-  ['rent','Nájem za měsíc','Kč/měs',24000],
-  ['occ','Kolik měsíců v roce je byt pronajatý','z 12',11],
-  ['owner','Poplatky SVJ, které platí vlastník','Kč/měs',3000],
-  ['repairs','Opravy a drobné náklady','Kč/měs',1500],
-  ['tax','Daň z nájmu (odhad)','Kč/měs',1200]
+  ['rent','Nájem za měsíc','Kč/měs',28000],
+  ['occ','Kolik měsíců v roce je byt pronajatý','z 12',12],
+  ['owner','Poplatky SVJ, které platí vlastník','Kč/měs',3100],
+  ['repairs','Opravy a drobné náklady','Kč/měs',1000],
+  ['tax','Daň z nájmu (odhad)','Kč/měs',0]
  ]}
 ];
 var DEF={},IDS=[];
