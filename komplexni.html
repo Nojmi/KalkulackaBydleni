@@ -147,7 +147,9 @@ var GROUPS=[
   ['ownB','Z toho vložíte do koupě, když starý byt ponecháte','Kč',1000000]
  ]},
  {t:'Podrobné nastavení: růst a inflace',f:[
-  ['infl','Růst příjmů, výdajů a nájmu ročně','%',0,1]
+  ['incGrowth','Růst příjmů domácnosti ročně','%',0,1],
+  ['expGrowth','Růst výdajů ročně (jídlo, zálohy a energie, poplatky SVJ)','%',0,1],
+  ['rentGrowth','Růst nájmu ročně','%',0,1]
  ]},
  {t:'Starý byt a jeho hypotéka',f:[
   ['oldIns','Pojištění splácení staré hypotéky','% z úvěru/rok',0.44,2],
@@ -229,7 +231,7 @@ function calc(S0,gOv){
   var balFix=rN===0?S0.oldBal-payNow*mF:S0.oldBal*Math.pow(1+rN,mF)-payNow*(Math.pow(1+rN,mF)-1)/rN;
   balFix=Math.max(0,balFix);
   S.oldBal=balFix;S.oldRate=S0.rateAfter;S.oldTerm=Math.max(0,S0.oldTerm-mF/12);
-  var g=(gOv!=null?gOv:S.gHouse)/100,rE=S.rEtf/100,infl=S.infl/100;
+  var g=(gOv!=null?gOv:S.gHouse)/100,rE=S.rEtf/100,gI=S.incGrowth/100,gE=S.expGrowth/100,gR=S.rentGrowth/100;
   var incAvg=S.incAvg,incBase=S.incAvg;
   var comm=S.sellComm/100;
   var proceeds=S.oldValue-S.oldBal-S.oldValue*comm-S.sellLegal;
@@ -243,9 +245,9 @@ function calc(S0,gOv){
   var oldB=schedule(S.oldBal,S.oldRate,S.oldTerm,S.oldIns,S.dRate,S.prepayOld);
   var oldC=schedule(S.oldBal,S.oldRate,S.oldTerm,S.oldIns,S.dRate,0);
   var newOther=S.newSvj+S.newEnergy+S.newIns;
-  var gf=function(y){return Math.pow(1+infl,y);};
+  var fI=function(y){return Math.pow(1+gI,y);},fE=function(y){return Math.pow(1+gE,y);},fR=function(y){return Math.pow(1+gR,y);};
   function taxFor(old,y){
-    var f=gf(y),rentY=S.rent*S.occ*f;
+    var f=fE(y),rentY=S.rent*S.occ*fR(y);
     if(S.taxMode==='flat')return 0.15*0.7*rentY;
     var exp=sumY(old.int,y)+sumY(old.ins,y)+(S.svjOwner+S.misc)*12*f+S.repairs/100*rentY;
     return 0.15*Math.max(0,rentY-exp);
@@ -288,12 +290,12 @@ function calc(S0,gOv){
     out.push(nw(0));
     var taxCache={};
     for(var m=1;m<=360;m++){
-      var y=Math.floor((m-1)/12),f=gf(y);
-      var left=(incAvg-(kind==='C'?S.otherStay:S.otherNew))*f;
+      var y=Math.floor((m-1)/12),f=fE(y),fi=fI(y),fr=fR(y);
+      var left=incAvg*fi-(kind==='C'?S.otherStay:S.otherNew)*f;
       if(kind==='A'){left-=sch.pay[m]+sch.ins[m]+newOther*f;}
       else if(kind==='B'){
         if(taxCache[y]===undefined)taxCache[y]=taxFor(old,y)/12;
-        var rm=rentM*f;
+        var rm=rentM*fr;
         left-=sch.pay[m]+sch.ins[m]+newOther*f;
         left+=rm-old.pay[m]-old.ins[m]-(S.svjOwner+S.misc)*f-S.repairs/100*rm-taxCache[y];
       }else{left-=old.pay[m]+old.ins[m]+(S.oldSvjAll+S.oldEnergy+S.oldGarage)*f;}
@@ -338,7 +340,7 @@ function buildInputs(){
   });
   inEl.innerHTML=h;
 }
-var MISSING=['infl', 'sellComm', 'sellLegal', 'oldEnergy', 'oldGarage', 'newEnergy', 'newIns', 'prepayOld', 'dRate', 'misc', 'bankRent', 'gHouse', 'rEtf'];
+var MISSING=['incGrowth','expGrowth','rentGrowth', 'sellComm', 'sellLegal', 'oldEnergy', 'oldGarage', 'newEnergy', 'newIns', 'prepayOld', 'dRate', 'misc', 'bankRent', 'gHouse', 'rEtf'];
 function fmtField(id,d){return (S[id]===0&&MISSING.indexOf(id)>=0)?'':nf(d).format(S[id]);}
 function fillInputs(){
   GROUPS.forEach(function(g){g.f.forEach(function(f){
