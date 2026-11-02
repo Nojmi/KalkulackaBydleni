@@ -54,6 +54,8 @@ th:first-child,td:first-child{text-align:left;white-space:normal}
 thead th{font-family:var(--cond);font-weight:600;font-size:14px;border-bottom:2px solid var(--line)}
 thead th i{display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--k);margin-right:6px}
 tr.sec td{background:var(--field);font-family:var(--cond);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-block:5px}
+tr.sm td{font-size:12px;color:var(--muted);padding-block:4px;border-bottom-color:transparent}
+tr.sm td:first-child{padding-left:24px}
 tr.tot td{font-weight:700;border-top:2px solid var(--line)}
 tr:last-child td{border-bottom:0}
 .pos{color:var(--good)}.neg{color:var(--bad)}
@@ -229,6 +231,18 @@ function render(){
   sec('Dluh a úspory');
   tr('Dluh celkem',function(x){return kc(x.debt);});
   tr('Úspory po koupi',function(x){return '<span class="'+(x.savLeft<0?'neg':'')+'">'+kc(x.savLeft)+'</span>';});
+  function hyp(x){return x.pay+x.ins+x.oldPay+x.oldIns;}
+  function sm(l,fn){t+='<tr class="sm"><td>'+l+'</td>'+['D','A','B','C'].map(function(k){var v=fn(R[k],k);return '<td>'+(v===null?'–':(v>=0?'+':'−')+kc(Math.abs(v)))+'</td>';}).join('')+'</tr>';}
+  sec('Hypotéky a rozdíly');
+  tr('Splátky všech hypoték vč. pojištění',function(x){return kc(hyp(x));});
+  sm('rozdíl oproti dnes',function(x,k){return k==='D'?null:hyp(x)-hyp(R.D);});
+  sm('rozdíl oproti prodeji bytu',function(x,k){return (k==='D'||k==='A')?null:hyp(x)-hyp(R.A);});
+  tr('Dluh na všech hypotékách',function(x){return kc(x.debt);});
+  sm('rozdíl oproti dnes',function(x,k){return k==='D'?null:x.debt-R.D.debt;});
+  sm('rozdíl oproti prodeji bytu',function(x,k){return (k==='D'||k==='A')?null:x.debt-R.A.debt;});
+  tr('Zbývá měsíčně',function(x){return '<span class="'+sgn(x.left)+'">'+kc(x.left)+'</span>';});
+  sm('rozdíl oproti dnes',function(x,k){return k==='D'?null:x.left-R.D.left;});
+  sm('rozdíl oproti prodeji bytu',function(x,k){return (k==='D'||k==='A')?null:x.left-R.A.left;});
   t+='</tbody></table></div></div>';
 
   /* rozpis pronájmu */
