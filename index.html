@@ -136,7 +136,8 @@ var GROUPS=[
  {t:'Pronájem starého bytu',f:[
   ['rent','Nájem za měsíc','Kč/měs',28000],
   ['occ','Kolik měsíců v roce je byt pronajatý','z 12',12],
-  ['owner','Poplatky SVJ, které platí vlastník','Kč/měs',3984],
+  ['svjTotal','Předpis záloh SVJ za byt celkem','Kč/měs',7292],
+  ['owner','z toho platí vlastník (fond oprav, správa, pojištění domu)','Kč/měs',3984],
   ['repairs','Opravy a drobné náklady','Kč/měs',1000],
   ['tax','Daň z nájmu (odhad)','Kč/měs',0]
  ]}
@@ -250,6 +251,10 @@ function render(){
   function rr(l,m,cls){return '<tr'+(cls?' class="'+cls+'"':'')+'><td>'+l+'</td><td>'+m+'</td><td>'+(typeof m==='number'?'':'')+'</td></tr>';}
   function row(l,mv,cls,neg){var v=neg?-mv:mv;return '<tr'+(cls?' class="'+cls+'"':'')+'><td>'+l+'</td><td><span class="'+(cls&&v<0?'neg':cls?'pos':'')+'">'+kc(v)+'</span></td><td><span class="'+(cls&&v<0?'neg':cls?'pos':'')+'">'+kc(v*12)+'</span></td></tr>';}
   t+='<div><h2>Pronájem starého bytu: rozpis</h2><div class="scroll"><table><thead><tr><th></th><th>Měsíčně</th><th>Ročně</th></tr></thead><tbody>';
+  var tenSvj=Math.max(0,S.svjTotal-S.owner);
+  t+='<tr class="sec"><td colspan="3">Rozdělení záloh SVJ ('+kc(S.svjTotal)+' měsíčně)</td></tr>';
+  t+='<tr><td>Platí vlastník, počítá se do nákladů pronájmu</td><td>'+kc(S.owner)+'</td><td>'+kc(S.owner*12)+'</td></tr>';
+  t+='<tr><td>Platí nájemník nad rámec nájmu, tvým rozpočtem neprochází</td><td>'+kc(tenSvj)+'</td><td>'+kc(tenSvj*12)+'</td></tr>';
   t+='<tr class="sec"><td colspan="3">Příjem a náklady pronájmu</td></tr>';
   t+='<tr><td>Nájem '+kc(S.rent)+' × '+S.occ+' měsíců z 12</td><td>'+kc(rM)+'</td><td>'+kc(rY)+'</td></tr>';
   t+=row('Poplatky SVJ, které platí vlastník',S.owner,'',true)+row('Opravy a drobné náklady',S.repairs,'',true)+row('Daň z nájmu (odhad)',S.tax,'',true);
