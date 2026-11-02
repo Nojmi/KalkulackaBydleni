@@ -96,16 +96,20 @@ var GROUPS=[
   ['income','Čistý příjem domácnosti za měsíc (průměr)','Kč/měs',150000],
   ['other','Ostatní měsíční výdaje (jídlo, auto, děti, spoření)','Kč/měs',40000]
  ]},
- {t:'Starý byt',f:[
-  ['oldValue','Cena, za kterou ho prodáte','Kč',7000000],
-  ['sellCost','Náklady prodeje (provize, právník)','Kč',230000],
+ {t:'Starý byt dnes',f:[
   ['oldBal','Zbývá doplatit hypotéku dnes','Kč',2500000],
   ['oldRate','Úrok staré hypotéky dnes','% p. a.',2,2],
   ['oldYears','Zbývající splatnost staré hypotéky dnes','let',25],
+  ['oldIns','Pojištění hypotéky dnes','Kč/měs',1200],
+  ['oldServ','Zálohy, energie a garáž dnes, když v něm bydlíte','Kč/měs',9500]
+ ]},
+ {t:'Starý byt po refixaci (za rok)',f:[
   ['monthsFix','Za kolik měsíců končí fixace','měsíců',12],
   ['rateAfter','Úrok staré hypotéky po refixaci (odhad)','% p. a.',4.8,2],
-  ['oldIns','Pojištění hypotéky','Kč/měs',1200],
-  ['oldServ','Zálohy, energie a garáž, když v něm bydlíte','Kč/měs',9500]
+  ['oldInsAfter','Pojištění hypotéky po refixaci','Kč/měs',1200],
+  ['oldServAfter','Zálohy, energie a garáž po refixaci, když v něm bydlíte','Kč/měs',9500],
+  ['oldValue','Cena, za kterou ho prodáte','Kč',7000000],
+  ['sellCost','Náklady prodeje (provize, právník)','Kč',230000]
  ]},
  {t:'Nový byt',f:[
   ['price','Kupní cena','Kč',11000000],
@@ -166,8 +170,8 @@ function calc(){
   var payA=pmt(loanA,s.rateA,s.term),payB=pmt(loanB,s.rateB,s.term);
   var rentNet=s.rent*s.occ/12-s.owner-s.repairs-s.tax;
   var A={loan:loanA,pay:payA,ins:s.insA,serv:s.newServ,oldPay:0,oldIns:0,oldServ:0,rent:0};
-  var B={loan:loanB,pay:payB,ins:s.insB,serv:s.newServ,oldPay:oldPay,oldIns:s.oldIns,oldServ:0,rent:rentNet};
-  var C={loan:0,pay:0,ins:0,serv:0,oldPay:oldPay,oldIns:s.oldIns,oldServ:s.oldServ,rent:0};
+  var B={loan:loanB,pay:payB,ins:s.insB,serv:s.newServ,oldPay:oldPay,oldIns:s.oldInsAfter,oldServ:0,rent:rentNet};
+  var C={loan:0,pay:0,ins:0,serv:0,oldPay:oldPay,oldIns:s.oldInsAfter,oldServ:s.oldServAfter,rent:0};
   A.debt=loanA;B.debt=loanB+balFix;C.debt=balFix;
   var D={loan:0,pay:0,ins:0,serv:0,oldPay:payNow,oldIns:s.oldIns,oldServ:s.oldServ,rent:0,debt:s.oldBal,savLeft:s.savings};
   A.cash=cash;
