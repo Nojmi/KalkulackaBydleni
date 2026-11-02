@@ -23,10 +23,10 @@
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45;
   padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));font-variant-numeric:tabular-nums}
-.wrap{max-width:1180px;margin:0 auto}
+.wrap{max-width:1600px;margin:0 auto}
 header.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;margin-bottom:16px}
 h1{font-family:var(--cond);font-weight:600;font-size:28px;letter-spacing:.01em;margin:0;text-wrap:balance}
-.sub{margin:4px 0 0;color:var(--muted);max-width:60ch}
+.sub{margin:4px 0 0;color:var(--muted);max-width:90ch}
 button{font:inherit;color:inherit;cursor:pointer}
 .ghost{background:transparent;border:1px solid var(--line);border-radius:6px;padding:7px 12px;color:var(--muted)}
 .ghost:hover{color:var(--ink);border-color:var(--muted)}
@@ -45,7 +45,7 @@ body.show-inputs .panel-inputs{display:block}
 body.show-inputs .panel-results{display:none}
 @media (min-width:920px){
   .tabs{display:none}
-  .layout{grid-template-columns:minmax(300px,370px) minmax(0,1fr);align-items:start}
+  .layout{grid-template-columns:minmax(320px,400px) minmax(0,1fr);align-items:start}
   .panel-inputs,body.show-inputs .panel-inputs{display:block;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;padding-right:4px}
   body.show-inputs .panel-results{display:block}
 }
@@ -66,7 +66,7 @@ details.grp[open]>summary::after{content:"–"}
 /* výsledky */
 h2{font-family:var(--cond);font-weight:600;font-size:18px;letter-spacing:.02em;margin:26px 0 10px}
 h2:first-child{margin-top:0}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:12px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;border-top:4px solid var(--k);min-width:0}
 .card h3{margin:0 0 2px;font-family:var(--cond);font-size:16px;font-weight:600;color:var(--k);display:flex;justify-content:space-between;gap:8px;align-items:baseline}
 .card .tag{font-family:var(--font);font-size:11px;font-weight:600;color:var(--good);border:1px solid var(--good);border-radius:99px;padding:1px 7px;white-space:nowrap}
