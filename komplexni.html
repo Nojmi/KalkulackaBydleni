@@ -133,56 +133,56 @@ body{margin:0}
 var LS_KEY='bydleni-kalkulacka-v3';
 var GROUPS=[
  {t:'Základní údaje (stačí vyplnit jen tyto)',f:[
-  ['incAvg','Čistý měsíční příjem domácnosti (průměr za posledních 3 až 12 měsíců)','Kč/měs',150000],
+  ['incAvg','Čistý měsíční příjem domácnosti (průměr za posledních 3 až 12 měsíců)','Kč/měs',180000],
   ['otherNew','Ostatní měsíční výdaje domácnosti (jídlo, auto, děti, spoření), po koupi','Kč/měs',40000],
   ['otherStay','Ostatní měsíční výdaje, když zůstanete v bytě','Kč/měs',40000],
-  ['oldValue','Hodnota starého bytu','Kč',7000000],
-  ['oldBal','Zůstatek hypotéky na starém bytě (po refixaci)','Kč',2500000],
-  ['oldRate','Sazba po refixaci','%',4.8,2],
-  ['oldTerm','Zbývající splatnost','let',25],
-  ['price','Cena nového bytu','Kč',11000000],
-  ['etf','Úspory a investice celkem','Kč',1500000],
-  ['ownB','Z toho vložíte do koupě, když starý byt ponecháte','Kč',1500000]
+  ['oldValue','Hodnota starého bytu','Kč',8200000],
+  ['oldBal','Zůstatek hypotéky na starém bytě (po refixaci)','Kč',2900380],
+  ['oldRate','Sazba po refixaci','%',4.79,2],
+  ['oldTerm','Zbývající splatnost','let',23],
+  ['price','Cena nového bytu','Kč',14000000],
+  ['etf','Úspory a investice celkem','Kč',2000000],
+  ['ownB','Z toho vložíte do koupě, když starý byt ponecháte','Kč',1000000]
  ]},
  {t:'Podrobné nastavení: růst a inflace',f:[
-  ['infl','Růst příjmů, výdajů a nájmu ročně','%',2,1]
+  ['infl','Růst příjmů, výdajů a nájmu ročně','%',0,1]
  ]},
  {t:'Starý byt a jeho hypotéka',f:[
-  ['oldIns','Pojištění splácení','% z úvěru/rok',0.5,2],
-  ['sellComm','Provize makléře při prodeji','%',3,1],
-  ['sellLegal','Právník a ostatní náklady prodeje','Kč',30000],
-  ['oldSvjAll','Zálohy do SVJ / fondu, když v bytě bydlíte','Kč/měs',7000],
-  ['oldEnergy','Elektřina a internet','Kč/měs',2500],
+  ['oldIns','Pojištění splácení','% z úvěru/rok',0.46,2],
+  ['sellComm','Provize makléře při prodeji','%',0,1],
+  ['sellLegal','Právník a ostatní náklady prodeje','Kč',0],
+  ['oldSvjAll','Zálohy do SVJ / fondu, když v bytě bydlíte','Kč/měs',13000],
+  ['oldEnergy','Elektřina a internet','Kč/měs',0],
   ['oldGarage','Garáž nebo parkování','Kč/měs',0]
  ]},
  {t:'Nový byt',f:[
-  ['reno','Vybavení a náklady po koupi (kuchyň, nábytek, stěhování, právník)','Kč',300000],
-  ['newSvj','Zálohy do SVJ / fondu','Kč/měs',8000],
-  ['newEnergy','Elektřina a internet','Kč/měs',2500],
-  ['newIns','Pojištění bytu','Kč/měs',500]
+  ['reno','Vybavení a náklady po koupi (kuchyň, nábytek, stěhování, právník)','Kč',350000],
+  ['newSvj','Zálohy do SVJ / fondu','Kč/měs',17000],
+  ['newEnergy','Elektřina a internet','Kč/měs',0],
+  ['newIns','Pojištění bytu','Kč/měs',0]
  ]},
  {t:'Financování nového bytu',f:[
-  ['ownA','Při prodeji: kolik z nich vložit do koupě','Kč',0],
-  ['rateA','Při prodeji: sazba nového úvěru','%',4.8,2],
-  ['insA','Při prodeji: pojištění splácení','% z úvěru/rok',0.5,2],
+  ['ownA','Při prodeji: kolik z nich vložit do koupě','Kč',1000000],
+  ['rateA','Při prodeji: sazba nového úvěru','%',5,2],
+  ['insA','Při prodeji: pojištění splácení','% z úvěru/rok',0.75,2],
   ['prepayOld','Při ponechání: mimořádná splátka staré hypotéky','Kč',0],
-  ['rateB','Při ponechání: sazba nového úvěru (obvykle vyšší, větší LTV)','%',5.3,2],
-  ['insB','Při ponechání: pojištění splácení','% z úvěru/rok',0.4,2],
+  ['rateB','Při ponechání: sazba nového úvěru (obvykle vyšší, větší LTV)','%',5,2],
+  ['insB','Při ponechání: pojištění splácení','% z úvěru/rok',0.58,2],
   ['term','Splatnost nového úvěru','let',30],
   ['dRate','Změna sazby po první fixaci (3 roky)','p. b.',0,2]
  ]},
  {t:'Pronájem starého bytu',f:[
-  ['rent','Měsíční nájem (bez záloh na služby)','Kč',24000],
-  ['occ','Obsazené měsíce v roce','z 12',11],
-  ['svjOwner','Poplatky SVJ, které platí vlastník (fond oprav, správa)','Kč/měs',3000],
-  ['repairs','Opravy a údržba','% z nájmu',5,1],
-  ['misc','Daň z nemovitosti, pojištění, drobnosti','Kč/měs',300],
+  ['rent','Měsíční nájem (bez záloh na služby)','Kč',28000],
+  ['occ','Obsazené měsíce v roce','z 12',12],
+  ['svjOwner','Poplatky SVJ, které platí vlastník (fond oprav, správa)','Kč/měs',3100],
+  ['repairs','Opravy a údržba','% z nájmu',3.6,1],
+  ['misc','Daň z nemovitosti, pojištění, drobnosti','Kč/měs',0],
   ['taxMode','Zdanění nájmu','select'],
-  ['bankRent','Kolik nájmu uzná banka','%',60]
+  ['bankRent','Kolik nájmu uzná banka','%',0]
  ]},
  {t:'Předpoklady vývoje',f:[
-  ['gHouse','Růst cen bytů ročně','%',3,1],
-  ['rEtf','Výnos investic ročně','%',6,1]
+  ['gHouse','Růst cen bytů ročně','%',0,1],
+  ['rEtf','Výnos investic ročně','%',0,1]
  ]}
 ];
 var DEF={taxMode:'real'};
@@ -327,10 +327,12 @@ function buildInputs(){
   });
   inEl.innerHTML=h;
 }
+var MISSING=['infl', 'sellComm', 'sellLegal', 'oldEnergy', 'oldGarage', 'newEnergy', 'newIns', 'prepayOld', 'dRate', 'misc', 'bankRent', 'gHouse', 'rEtf'];
+function fmtField(id,d){return (S[id]===0&&MISSING.indexOf(id)>=0)?'':nf(d).format(S[id]);}
 function fillInputs(){
   GROUPS.forEach(function(g){g.f.forEach(function(f){
     var el=document.getElementById(f[0]);if(!el)return;
-    if(f[2]==='select')el.value=S[f[0]];else el.value=nf(f[4]||0).format(S[f[0]]);
+    if(f[2]==='select')el.value=S[f[0]];else{el.value=fmtField(f[0],f[4]||0);if(MISSING.indexOf(f[0])>=0)el.placeholder='doplň';}
   });});
 }
 inEl.addEventListener('input',function(e){
@@ -340,7 +342,7 @@ inEl.addEventListener('input',function(e){
 });
 inEl.addEventListener('change',function(e){
   var el=e.target,id=el.id;if(!(id in S)||id==='taxMode')return;
-  el.value=nf(parseInt(el.dataset.d||'0',10)).format(S[id]);
+  el.value=fmtField(id,parseInt(el.dataset.d||'0',10));
 });
 inEl.addEventListener('focusin',function(e){if(e.target.tagName==='INPUT')e.target.select();});
 document.getElementById('reset').addEventListener('click',function(){S=Object.assign({},DEF);save();fillInputs();render();});
