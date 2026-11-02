@@ -223,7 +223,7 @@ function render(){
   tr('Splátka staré hypotéky',function(x){return dash(x.oldPay);});
   tr('Pojištění staré hypotéky',function(x){return dash(x.oldIns);});
   tr('Zálohy, energie a garáž',function(x){return dash(x.oldServ);});
-  tr('Čistý zisk z pronájmu',function(x){return x.rent?kc(-x.rent):'–';});
+  tr('Příjem z pronájmu po nákladech',function(x){return x.rent?kc(-x.rent):'–';});
   tr('Bydlení celkem',function(x){return kc(x.housing);},'tot');
   tr('Zbývá měsíčně',function(x){return '<span class="'+sgn(x.left)+'">'+kc(x.left)+'</span>';},'tot');
   sec('Dluh a úspory');
@@ -231,6 +231,19 @@ function render(){
   tr('Úspory po koupi',function(x){return '<span class="'+(x.savLeft<0?'neg':'')+'">'+kc(x.savLeft)+'</span>';});
   t+='</tbody></table></div></div>';
 
+  /* rozpis pronájmu */
+  var rM=S.rent*S.occ/12,rY=S.rent*S.occ,opM=S.owner+S.repairs+S.tax,netBefore=rM-opM,mort=R.oldPay+S.oldInsAfter,netAfter=netBefore-mort;
+  function rr(l,m,cls){return '<tr'+(cls?' class="'+cls+'"':'')+'><td>'+l+'</td><td>'+m+'</td><td>'+(typeof m==='number'?'':'')+'</td></tr>';}
+  function row(l,mv,cls,neg){var v=neg?-mv:mv;return '<tr'+(cls?' class="'+cls+'"':'')+'><td>'+l+'</td><td><span class="'+(cls&&v<0?'neg':cls?'pos':'')+'">'+kc(v)+'</span></td><td><span class="'+(cls&&v<0?'neg':cls?'pos':'')+'">'+kc(v*12)+'</span></td></tr>';}
+  t+='<div><h2>Pronájem starého bytu: rozpis</h2><div class="scroll"><table><thead><tr><th></th><th>Měsíčně</th><th>Ročně</th></tr></thead><tbody>';
+  t+='<tr class="sec"><td colspan="3">Příjem a náklady pronájmu</td></tr>';
+  t+='<tr><td>Nájem '+kc(S.rent)+' × '+S.occ+' měsíců z 12</td><td>'+kc(rM)+'</td><td>'+kc(rY)+'</td></tr>';
+  t+=row('Poplatky SVJ, které platí vlastník',S.owner,'',true)+row('Opravy a drobné náklady',S.repairs,'',true)+row('Daň z nájmu (odhad)',S.tax,'',true);
+  t+=row('Příjem z pronájmu po nákladech',netBefore,'tot');
+  t+='<tr class="sec"><td colspan="3">Hypotéka na starém bytě po refixaci</td></tr>';
+  t+=row('Splátka hypotéky',R.oldPay,'',true)+row('Pojištění hypotéky',S.oldInsAfter,'',true);
+  t+=row(netAfter>=0?'Pronájem ti měsíčně přispívá':'Na pronájem měsíčně doplácíš',netAfter,'tot');
+  t+='</tbody></table></div><p class="note">Zálohy a energie ve starém bytě platí nájemník, proto tu nejsou. Příjem z pronájmu po nákladech '+kc(netBefore)+' měsíčně pokryje splátku hypotéky '+kc(mort)+(netAfter>=0?' a ještě zbyde.':', rozdíl doplácíš ze společného rozpočtu.')+'</p></div>';
   /* graf: zbývá měsíčně */
   var vals=['D','A','B','C'].map(function(k){return R[k].left;});
   var mx=Math.max.apply(null,vals.concat([1])),mn=Math.min.apply(null,vals.concat([0]));
