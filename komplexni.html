@@ -386,7 +386,7 @@ tabI.addEventListener('click',function(){setTab(true);});
 var res=document.getElementById('results');
 var HZ=15;
 res.addEventListener('click',function(e){var t=e.target.closest('[data-hz]');if(t){HZ=parseInt(t.dataset.hz,10);render();}});
-var NAMES={D:'Dnes',A:'Prodat a koupit',B:'Koupit nový a pronajímat starý',C:'Zůstat'};
+var NAMES={D:'Dnes',A:'Prodat a koupit',B:'Koupit a pronajímat',C:'Zůstat'};
 function sgn(x){return x<0?'neg':'';}
 function limit(v,warn,bad,fmt){var c=v>bad?'bad':(v>warn?'warn':'ok');return '<span class="'+c+'">'+fmt(v)+'</span>';}
 
@@ -466,7 +466,7 @@ function render(){
   trF('Dluh k ročnímu příjmu (DTI)',function(x){return limit(x.dtiAvg,7,8.5,function(v){return nf1.format(v);});});
   trF('Splátky k příjmu (DSTI)',function(x){return limit(x.dstiAvg*100,45,55,function(v){return pc(v,0);});});
   h+='</tbody></table></div>';
-  h+='<p class="note">Orientační hranice: DTI do 7 (doporučení ČNB u investičních hypoték), LTV do 70–80 %, splátky do 45–50 % čistého příjmu. U varianty „Koupit nový a pronajímat starý“ se do DSTI počítá jen '+S.bankRent+' % nájmu. Skutečné posouzení dělá banka a prémie může uznat jen částečně.</p>';
+  h+='<p class="note">Orientační hranice: DTI do 7 (doporučení ČNB u investičních hypoték), LTV do 70–80 %, splátky do 45–50 % čistého příjmu. U varianty „Koupit a pronajímat“ se do DSTI počítá jen '+S.bankRent+' % nájmu. Skutečné posouzení dělá banka a prémie může uznat jen částečně.</p>';
 
   /* jmění */
   var ch=chartSvg(R,HZ);
