@@ -226,6 +226,7 @@ function render(){
   tr('Splátka staré hypotéky',function(x){return dash(x.oldPay);});
   tr('Pojištění staré hypotéky',function(x){return dash(x.oldIns);});
   tr('Zálohy, energie a garáž',function(x){return dash(x.oldServ);});
+  tr('Součet před odečtením pronájmu',function(x){return kc(x.housing+x.rent);});
   tr('Příjem z pronájmu po nákladech',function(x){return x.rent?kc(-x.rent):'–';});
   tr('Bydlení celkem',function(x){return kc(x.housing);},'tot');
   tr('Zbývá měsíčně',function(x){return '<span class="'+sgn(x.left)+'">'+kc(x.left)+'</span>';},'tot');
