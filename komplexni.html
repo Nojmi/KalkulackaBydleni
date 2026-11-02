@@ -383,7 +383,7 @@ tabI.addEventListener('click',function(){setTab(true);});
 var res=document.getElementById('results');
 var HZ=15;
 res.addEventListener('click',function(e){var t=e.target.closest('[data-hz]');if(t){HZ=parseInt(t.dataset.hz,10);render();}});
-var NAMES={D:'Dnes',A:'Prodat starý byt',B:'Ponechat a pronajímat',C:'Zůstat, nekupovat'};
+var NAMES={D:'Dnes',A:'Prodat a koupit',B:'Koupit nový a pronajímat starý',C:'Zůstat'};
 function sgn(x){return x<0?'neg':'';}
 function limit(v,warn,bad,fmt){var c=v>bad?'bad':(v>warn?'warn':'ok');return '<span class="'+c+'">'+fmt(v)+'</span>';}
 
@@ -419,7 +419,7 @@ function render(){
   var R=calc(S);
   var best=R.A.leftAvg>=R.B.leftAvg?'A':'B';
   var h='<h2>Měsíčně: dnes a po refixaci</h2><div class="cards">';
-  ['D','A','B','C'].forEach(function(k){
+  ['D','C','A','B'].forEach(function(k){
     var x=R[k];
     var d=k==='D'?'Starý byt, hypotéka '+mil(x.debt)+', sazba '+pc(S.oldRate,2):k==='A'?'Úvěr '+mil(x.loan)+', sazba '+pc(x.rate,2):k==='B'?'Úvěr '+mil(x.loan)+' na nový a '+mil(R.B.debt-x.loan)+' na starý byt':'Bez koupě, hypotéka na starém bytě '+mil(x.debt);
     h+='<div class="card '+k+'"><h3><span>'+NAMES[k]+'</span>'+(k===best?'<span class="tag">víc zbývá</span>':'')+'</h3><div class="d">'+d+'</div>';
@@ -430,8 +430,8 @@ function render(){
   h+='</div>';
 
   /* rozpočet */
-  h+='<h2>Měsíční rozpočet</h2><div class="tw"><table><thead><tr><th></th>'+['D','A','B','C'].map(function(k){return '<th class="'+k+'"><span class="dot"></span>'+NAMES[k]+'</th>';}).join('')+'</tr></thead><tbody>';
-  function tr(l,fn,cls){h+='<tr'+(cls?' class="'+cls+'"':'')+'><td>'+l+'</td>'+['D','A','B','C'].map(function(k){return '<td>'+fn(R[k],k)+'</td>';}).join('')+'</tr>';}
+  h+='<h2>Měsíční rozpočet</h2><div class="tw"><table><thead><tr><th></th>'+['D','C','A','B'].map(function(k){return '<th class="'+k+'"><span class="dot"></span>'+NAMES[k]+'</th>';}).join('')+'</tr></thead><tbody>';
+  function tr(l,fn,cls){h+='<tr'+(cls?' class="'+cls+'"':'')+'><td>'+l+'</td>'+['D','C','A','B'].map(function(k){return '<td>'+fn(R[k],k)+'</td>';}).join('')+'</tr>';}
   function sec(l){h+='<tr class="sec"><td colspan="5">'+l+'</td></tr>';}
   sec('Příjem');
   tr('Čistý příjem domácnosti',function(){return kc(R.incAvg);});
@@ -451,27 +451,28 @@ function render(){
   h+='<p class="note">Nájemné vlastník dostane jen v obsazených měsících. Čistý přebytek z pronájmu už zahrnuje splátku staré hypotéky, poplatky SVJ vlastníka, opravy, prázdné měsíce a daň z nájmu ('+kc(R.tax1*12)+' ročně v prvním roce).</p>';
 
   /* financování */
-  h+='<h2>Financování a limity bank</h2><div class="tw"><table><thead><tr><th></th>'+['A','B','C'].map(function(k){return '<th class="'+k+'"><span class="dot"></span>'+NAMES[k]+'</th>';}).join('')+'</tr></thead><tbody>';
-  tr('Potřeba na koupi (cena + vybavení)',function(x,k){return k==='C'?'–':kc(R.need);});
-  tr('Čistý výtěžek z prodeje starého bytu',function(x,k){return k==='A'?kc(R.proceeds):'–';});
-  tr('Vlastní peníze vložené do koupě',function(x,k){return k==='A'?kc(S.ownA):k==='B'?kc(S.ownB):'–';});
-  tr('Nový úvěr',function(x,k){return k==='C'?'–':'<b>'+kc(x.loan)+'</b>';},'tot');
-  tr('Celkový dluh (nový + starý)',function(x){return kc(x.debt);});
-  tr('LTV nového úvěru',function(x,k){return k==='C'?pc(x.ltv*100,0)+' (starý)':limit(x.ltv*100,70,80,function(v){return pc(v,0);});});
-  tr('LTV všech dluhů vůči oběma bytům',function(x,k){return k==='B'?limit(x.ltvAll*100,70,80,function(v){return pc(v,0);}):'–';});
-  tr('Dluh k ročnímu příjmu (DTI)',function(x){return limit(x.dtiAvg,7,8.5,function(v){return nf1.format(v);});});
-  tr('Splátky k příjmu (DSTI)',function(x){return limit(x.dstiAvg*100,45,55,function(v){return pc(v,0);});});
+  function trF(l,fn,cls){h+='<tr'+(cls?' class="'+cls+'"':'')+'><td>'+l+'</td>'+['C','A','B'].map(function(k){return '<td>'+fn(R[k],k)+'</td>';}).join('')+'</tr>';}
+  h+='<h2>Financování a limity bank</h2><div class="tw"><table><thead><tr><th></th>'+['C','A','B'].map(function(k){return '<th class="'+k+'"><span class="dot"></span>'+NAMES[k]+'</th>';}).join('')+'</tr></thead><tbody>';
+  trF('Potřeba na koupi (cena + vybavení)',function(x,k){return k==='C'?'–':kc(R.need);});
+  trF('Čistý výtěžek z prodeje starého bytu',function(x,k){return k==='A'?kc(R.proceeds):'–';});
+  trF('Vlastní peníze vložené do koupě',function(x,k){return k==='A'?kc(S.ownA):k==='B'?kc(S.ownB):'–';});
+  trF('Nový úvěr',function(x,k){return k==='C'?'–':'<b>'+kc(x.loan)+'</b>';},'tot');
+  trF('Celkový dluh (nový + starý)',function(x){return kc(x.debt);});
+  trF('LTV nového úvěru',function(x,k){return k==='C'?pc(x.ltv*100,0)+' (starý)':limit(x.ltv*100,70,80,function(v){return pc(v,0);});});
+  trF('LTV všech dluhů vůči oběma bytům',function(x,k){return k==='B'?limit(x.ltvAll*100,70,80,function(v){return pc(v,0);}):'–';});
+  trF('Dluh k ročnímu příjmu (DTI)',function(x){return limit(x.dtiAvg,7,8.5,function(v){return nf1.format(v);});});
+  trF('Splátky k příjmu (DSTI)',function(x){return limit(x.dstiAvg*100,45,55,function(v){return pc(v,0);});});
   h+='</tbody></table></div>';
-  h+='<p class="note">Orientační hranice: DTI do 7 (doporučení ČNB u investičních hypoték), LTV do 70–80 %, splátky do 45–50 % čistého příjmu. U varianty „Ponechat“ se do DSTI počítá jen '+S.bankRent+' % nájmu. Skutečné posouzení dělá banka a prémie může uznat jen částečně.</p>';
+  h+='<p class="note">Orientační hranice: DTI do 7 (doporučení ČNB u investičních hypoték), LTV do 70–80 %, splátky do 45–50 % čistého příjmu. U varianty „Koupit nový a pronajímat starý“ se do DSTI počítá jen '+S.bankRent+' % nájmu. Skutečné posouzení dělá banka a prémie může uznat jen částečně.</p>';
 
   /* jmění */
   var ch=chartSvg(R,HZ);
-  h+='<h2>Čisté jmění v čase</h2><div class="chartbox"><div class="hz" role="group" aria-label="Horizont grafu">'+[10,15,25,30].map(function(t){return '<button type="button" data-hz="'+t+'" aria-pressed="'+(t===HZ)+'">'+t+' let</button>';}).join('')+'</div><div class="legend">'+['A','B','C'].map(function(k){return '<span class="'+k+'" style="--k:var(--'+k.toLowerCase()+')">'+NAMES[k]+'</span>';}).join('')+'</div>'+ch.svg+'<div class="tip" id="tip"></div></div>';
+  h+='<h2>Čisté jmění v čase</h2><div class="chartbox"><div class="hz" role="group" aria-label="Horizont grafu">'+[10,15,25,30].map(function(t){return '<button type="button" data-hz="'+t+'" aria-pressed="'+(t===HZ)+'">'+t+' let</button>';}).join('')+'</div><div class="legend">'+['C','A','B'].map(function(k){return '<span class="'+k+'" style="--k:var(--'+k.toLowerCase()+')">'+NAMES[k]+'</span>';}).join('')+'</div>'+ch.svg+'<div class="tip" id="tip"></div></div>';
   h+='<p class="note">Čisté jmění = hodnota bytů + úspory a našetřené přebytky − dluhy, v mil. Kč. Každý měsíc zbylé peníze se investují s výnosem '+pc(S.rEtf,1)+'. Starý byt se oceňuje po odečtení nákladů prodeje.</p>';
-  h+='<div class="tw" style="margin-top:10px"><table><thead><tr><th>Za</th>'+['A','B','C'].map(function(k){return '<th class="'+k+'"><span class="dot"></span>'+NAMES[k]+'</th>';}).join('')+'<th>Ponechat − prodat</th></tr></thead><tbody>';
+  h+='<div class="tw" style="margin-top:10px"><table><thead><tr><th>Za</th>'+['C','A','B'].map(function(k){return '<th class="'+k+'"><span class="dot"></span>'+NAMES[k]+'</th>';}).join('')+'<th>Pronajímat − prodat</th></tr></thead><tbody>';
   [10,15,25].forEach(function(t){
     var d=R.B.nw[t]-R.A.nw[t];
-    h+='<tr><td>'+t+' let</td><td>'+mil(R.A.nw[t])+'</td><td>'+mil(R.B.nw[t])+'</td><td>'+mil(R.C.nw[t])+'</td><td><b class="'+(d>=0?'pos':'neg')+'">'+(d>=0?'+':'−')+mil(Math.abs(d))+'</b></td></tr>';
+    h+='<tr><td>'+t+' let</td><td>'+mil(R.C.nw[t])+'</td><td>'+mil(R.A.nw[t])+'</td><td>'+mil(R.B.nw[t])+'</td><td><b class="'+(d>=0?'pos':'neg')+'">'+(d>=0?'+':'−')+mil(Math.abs(d))+'</b></td></tr>';
   });
   h+='</tbody></table></div>';
 
