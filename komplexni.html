@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kalkulačka bydlení</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap">
+<style>
+/* Koncept: pracovní sešit rodiny. Vstupy vlevo, tři varianty (prodat / ponechat / zůstat) vedle sebe ve stejných barvách napříč kartami, tabulkami i grafem. */
+:root{
+  --bg:#F2F5F8; --surface:#FFFFFF; --ink:#1B2433; --muted:#5B6778; --line:#DCE2EA; --field:#F6F8FB;
+  --a:#17756F; --b:#B4691A; --c:#4558A0;
+  --good:#1D7F49; --warn:#A9701A; --bad:#B8362A;
+  --font:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --cond:'IBM Plex Sans Condensed','IBM Plex Sans',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E141B; --surface:#161D27; --ink:#E6EAF0; --muted:#9BA7B7; --line:#273140; --field:#1C2531;
+  --a:#4CBDB2; --b:#EBA85B; --c:#92A6E6; --good:#4CC380; --warn:#E3B04B; --bad:#F08373; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E141B; --surface:#161D27; --ink:#E6EAF0; --muted:#9BA7B7; --line:#273140; --field:#1C2531;
+  --a:#4CBDB2; --b:#EBA85B; --c:#92A6E6; --good:#4CC380; --warn:#E3B04B; --bad:#F08373; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45;
+  padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin:0 auto}
+header.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;margin-bottom:16px}
+h1{font-family:var(--cond);font-weight:600;font-size:28px;letter-spacing:.01em;margin:0;text-wrap:balance}
+.sub{margin:4px 0 0;color:var(--muted);max-width:60ch}
+button{font:inherit;color:inherit;cursor:pointer}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:6px;padding:7px 12px;color:var(--muted)}
+.ghost:hover{color:var(--ink);border-color:var(--muted)}
+:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.io{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:16px}
+.io textarea{width:100%;background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;resize:vertical}
+.iob{display:flex;gap:12px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.iob .note{margin:0}
+.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:3px;margin-bottom:16px}
+.tabs button{flex:1;border:0;background:transparent;padding:8px;border-radius:6px;font-weight:600;color:var(--muted)}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.layout{display:grid;grid-template-columns:minmax(0,1fr);gap:24px}
+.panel-inputs{display:none}
+body.show-inputs .panel-inputs{display:block}
+body.show-inputs .panel-results{display:none}
+@media (min-width:920px){
+  .tabs{display:none}
+  .layout{grid-template-columns:minmax(300px,370px) minmax(0,1fr);align-items:start}
+  .panel-inputs,body.show-inputs .panel-inputs{display:block;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;padding-right:4px}
+  body.show-inputs .panel-results{display:block}
+}
+/* vstupy */
+details.grp{background:var(--surface);border:1px solid var(--line);border-radius:8px;margin-bottom:10px}
+details.grp>summary{cursor:pointer;padding:11px 14px;font-weight:600;font-family:var(--cond);font-size:15px;letter-spacing:.02em;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.grp>summary::-webkit-details-marker{display:none}
+details.grp>summary::after{content:"+";color:var(--muted);font-size:18px;line-height:1}
+details.grp[open]>summary::after{content:"–"}
+.fields{padding:2px 14px 12px;display:grid;gap:10px}
+.f{display:grid;gap:3px}
+.f .l{font-size:12.5px;color:var(--muted);line-height:1.3}
+.f .in{display:flex;align-items:center;background:var(--field);border:1px solid var(--line);border-radius:6px}
+.f .in:focus-within{border-color:var(--a);box-shadow:0 0 0 2px color-mix(in srgb,var(--a) 25%,transparent)}
+.f input,.f select{flex:1;min-width:0;background:transparent;border:0;color:var(--ink);font:inherit;font-weight:500;padding:8px 10px;text-align:right}
+.f select{text-align:left}
+.f .u{padding-right:10px;color:var(--muted);font-size:12px;white-space:nowrap}
+/* výsledky */
+h2{font-family:var(--cond);font-weight:600;font-size:18px;letter-spacing:.02em;margin:26px 0 10px}
+h2:first-child{margin-top:0}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;border-top:4px solid var(--k);min-width:0}
+.card h3{margin:0 0 2px;font-family:var(--cond);font-size:16px;font-weight:600;color:var(--k);display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.card .tag{font-family:var(--font);font-size:11px;font-weight:600;color:var(--good);border:1px solid var(--good);border-radius:99px;padding:1px 7px;white-space:nowrap}
+.card .d{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+.big{font-size:26px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.cap{font-size:12px;color:var(--muted);margin-bottom:8px}
+.row{display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding:6px 0;font-size:13px}
+.row b{font-weight:600}
+.A{--k:var(--a)}.B{--k:var(--b)}.C{--k:var(--c)}
+.tw{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;min-width:520px}
+th,td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal}
+thead th{font-family:var(--cond);font-weight:600;font-size:13.5px;border-bottom:2px solid var(--line);vertical-align:bottom}
+thead th .dot{display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--k);margin-right:6px}
+tr.sec td{background:var(--field);font-family:var(--cond);font-weight:600;color:var(--muted);font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding-block:5px}
+tr.tot td{font-weight:700;border-top:2px solid var(--line)}
+tbody tr:last-child td{border-bottom:0}
+.neg{color:var(--bad)}.pos{color:var(--good)}.warn{color:var(--warn);font-weight:600}.bad{color:var(--bad);font-weight:600}.ok{color:var(--good)}
+.note{font-size:12.5px;color:var(--muted);margin:8px 0 0;max-width:80ch}
+.chartbox{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px;position:relative}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;margin-bottom:6px}
+.legend span::before{content:"";display:inline-block;width:14px;height:3px;background:var(--k);margin-right:6px;vertical-align:middle;border-radius:2px}
+svg{display:block;width:100%;height:auto}
+svg text{fill:var(--muted);font-family:var(--font);font-size:11px}
+.hz{display:flex;gap:4px;justify-content:flex-end;margin-bottom:6px}
+.hz button{border:1px solid var(--line);background:transparent;border-radius:6px;padding:3px 10px;font-size:12.5px;color:var(--muted)}
+.hz button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--surface);border-radius:6px;padding:6px 9px;font-size:12px;white-space:nowrap;display:none;z-index:2}
+.verdict{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--ink);border-radius:8px;padding:12px 14px}
+.verdict ul{margin:0;padding-left:18px}
+.verdict li{margin:3px 0}
+footer{margin-top:28px;color:var(--muted);font-size:12px;max-width:90ch}
+body{margin:0}
+.back{display:inline-block;margin-bottom:12px;color:var(--muted);font-size:13px;text-decoration:none}
+.back:hover{text-decoration:underline}
+</style>
+</head><body>
+
+<div class="wrap">
+  <a class="back" href="./">← Zpět na jednoduchou kalkulačku</a>
+  <header class="top">
+    <div>
+      <h1>Kalkulačka bydlení</h1>
+      <p class="sub">Porovná tři cesty: prodat starý byt a koupit nový, starý byt si nechat k pronájmu, nebo zůstat. Výchozí čísla jsou jen příklad, přepiš je svými, stačí vyplnit prvních pár základních údajů, zbytek má rozumné výchozí hodnoty a najdeš ho v podrobném nastavení.</p>
+    </div>
+    <div class="btns"><button class="ghost" id="exp" type="button">Zkopírovat hodnoty</button><button class="ghost" id="imp" type="button">Vložit hodnoty</button><button class="ghost" id="reset" type="button">Obnovit výchozí</button></div>
+  </header>
+  <div class="io" id="io" hidden><textarea id="iot" rows="4" aria-label="Hodnoty kalkulačky" placeholder="Sem vlož zkopírované hodnoty"></textarea><div class="iob"><button class="ghost" id="iook" type="button">Použít hodnoty</button><span id="iomsg" class="note"></span></div></div>
+  <div class="tabs" role="group" aria-label="Zobrazení">
+    <button type="button" id="tabR" aria-pressed="true">Výsledky</button>
+    <button type="button" id="tabI" aria-pressed="false">Vstupy</button>
+  </div>
+  <div class="layout">
+    <aside class="panel-inputs" id="inputs" aria-label="Vstupy"></aside>
+    <main class="panel-results" id="results" aria-live="polite"></main>
+  </div>
+  <footer>Orientační model, ne nabídka banky ani finanční či daňové poradenství. Splátky jsou anuitní, pojištění splácení se počítá z aktuálního zůstatku. Pravidla (daně, limity ČNB) jsou pro Česko. Příjmy, výdaje, zálohy a nájem rostou stejným tempem, splátky ne. Prodej bytu se počítá bez daně (časový test 10 let nebo bydliště 2 roky). Hodnoty se ukládají jen v tomto prohlížeči.</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+var LS_KEY='bydleni-kalkulacka-v3';
+var GROUPS=[
+ {t:'Základní údaje (stačí vyplnit jen tyto)',f:[
+  ['incAvg','Čistý měsíční příjem domácnosti (průměr za posledních 3 až 12 měsíců)','Kč/měs',150000],
+  ['otherNew','Ostatní měsíční výdaje domácnosti (jídlo, auto, děti, spoření), po koupi','Kč/měs',40000],
+  ['otherStay','Ostatní měsíční výdaje, když zůstanete v bytě','Kč/měs',40000],
+  ['oldValue','Hodnota starého bytu','Kč',7000000],
+  ['oldBal','Zůstatek hypotéky na starém bytě (po refixaci)','Kč',2500000],
+  ['oldRate','Sazba po refixaci','%',4.8,2],
+  ['oldTerm','Zbývající splatnost','let',25],
+  ['price','Cena nového bytu','Kč',11000000],
+  ['etf','Úspory a investice celkem','Kč',1500000],
+  ['ownB','Z toho vložíte do koupě, když starý byt ponecháte','Kč',1500000]
+ ]},
+ {t:'Podrobné nastavení: růst a inflace',f:[
+  ['infl','Růst příjmů, výdajů a nájmu ročně','%',2,1]
+ ]},
+ {t:'Starý byt a jeho hypotéka',f:[
+  ['oldIns','Pojištění splácení','% z úvěru/rok',0.5,2],
+  ['sellComm','Provize makléře při prodeji','%',3,1],
+  ['sellLegal','Právník a ostatní náklady prodeje','Kč',30000],
+  ['oldSvjAll','Zálohy do SVJ / fondu, když v bytě bydlíte','Kč/měs',7000],
+  ['oldEnergy','Elektřina a internet','Kč/měs',2500],
+  ['oldGarage','Garáž nebo parkování','Kč/měs',0]
+ ]},
+ {t:'Nový byt',f:[
+  ['reno','Vybavení a náklady po koupi (kuchyň, nábytek, stěhování, právník)','Kč',300000],
+  ['newSvj','Zálohy do SVJ / fondu','Kč/měs',8000],
+  ['newEnergy','Elektřina a internet','Kč/měs',2500],
+  ['newIns','Pojištění bytu','Kč/měs',500]
+ ]},
+ {t:'Financování nového bytu',f:[
+  ['ownA','Při prodeji: kolik z nich vložit do koupě','Kč',0],
+  ['rateA','Při prodeji: sazba nového úvěru','%',4.8,2],
+  ['insA','Při prodeji: pojištění splácení','% z úvěru/rok',0.5,2],
+  ['prepayOld','Při ponechání: mimořádná splátka staré hypotéky','Kč',0],
+  ['rateB','Při ponechání: sazba nového úvěru (obvykle vyšší, větší LTV)','%',5.3,2],
+  ['insB','Při ponechání: pojištění splácení','% z úvěru/rok',0.4,2],
+  ['term','Splatnost nového úvěru','let',30],
+  ['dRate','Změna sazby po první fixaci (3 roky)','p. b.',0,2]
+ ]},
+ {t:'Pronájem starého bytu',f:[
+  ['rent','Měsíční nájem (bez záloh na služby)','Kč',24000],
+  ['occ','Obsazené měsíce v roce','z 12',11],
+  ['svjOwner','Poplatky SVJ, které platí vlastník (fond oprav, správa)','Kč/měs',3000],
+  ['repairs','Opravy a údržba','% z nájmu',5,1],
+  ['misc','Daň z nemovitosti, pojištění, drobnosti','Kč/měs',300],
+  ['taxMode','Zdanění nájmu','select'],
+  ['bankRent','Kolik nájmu uzná banka','%',60]
+ ]},
+ {t:'Předpoklady vývoje',f:[
+  ['gHouse','Růst cen bytů ročně','%',3,1],
+  ['rEtf','Výnos investic ročně','%',6,1]
+ ]}
+];
+var DEF={taxMode:'real'};
+GROUPS.forEach(function(g){g.f.forEach(function(f){if(f[2]!=='select')DEF[f[0]]=f[3];});});
+var S=Object.assign({},DEF);
+try{var raw=localStorage.getItem(LS_KEY);if(raw){var o=JSON.parse(raw);for(var k in DEF){if(k in o&&typeof o[k]===typeof DEF[k])S[k]=o[k];}}}catch(e){}
+function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(S));}catch(e){}}
+
+var nf=function(d){return new Intl.NumberFormat('cs-CZ',{minimumFractionDigits:d,maximumFractionDigits:d});};
+var nf0=nf(0),nf1=nf(1),nf2=nf(2);
+var NB=' ';
+function kc(x){return nf0.format(Math.round(x))+NB+'Kč';}
+function num(x){return nf0.format(Math.round(x));}
+function mil(x){return nf2.format(x/1e6)+NB+'mil.';}
+function pc(x,d){return (d===0?nf0:d===2?nf2:nf1).format(x)+NB+'%';}
+function parse(v){var x=parseFloat(String(v).replace(/[\s ]/g,'').replace(',','.'));return isFinite(x)?x:0;}
+
+/* ---------- výpočty ---------- */
+function pmtF(P,r,n){if(P<=0)return 0;if(n<=0)return P;if(r===0)return P/n;return P*r/(1-Math.pow(1+r,-n));}
+function schedule(P,rate,years,insPct,delta,pre){
+  var N=360,n=Math.round(Math.min(30,Math.max(1,years))*12);
+  var b=Math.max(0,P-(pre||0)),r=rate/1200;
+  var pay=pmtF(b,r,n);
+  var A={pay:new Float64Array(N+1),int:new Float64Array(N+1),ins:new Float64Array(N+1),bal:new Float64Array(N+1)};
+  A.bal[0]=b;
+  for(var m=1;m<=N;m++){
+    if(m===37&&delta){r=(rate+delta)/1200;var left=n-36;pay=(b>0&&left>0)?pmtF(b,r,left):b;}
+    if(b<=0.5){A.bal[m]=0;continue;}
+    var i=b*r,insm=b*insPct/1200,p=Math.min(pay,b+i);
+    if(m>=n)p=b+i;
+    b=b+i-p;if(b<0.5)b=0;
+    A.pay[m]=p;A.int[m]=i;A.ins[m]=insm;A.bal[m]=b;
+  }
+  return A;
+}
+function sumY(arr,y){var s=0;for(var m=y*12+1;m<=y*12+12;m++)s+=arr[m];return s;}
+
+function calc(S,gOv){
+  var g=(gOv!=null?gOv:S.gHouse)/100,rE=S.rEtf/100,infl=S.infl/100;
+  var incAvg=S.incAvg,incBase=S.incAvg;
+  var comm=S.sellComm/100;
+  var proceeds=S.oldValue-S.oldBal-S.oldValue*comm-S.sellLegal;
+  var need=S.price+S.reno;
+  var srcA=proceeds+S.ownA,loanA=Math.max(0,need-srcA),extraA=Math.max(0,srcA-need);
+  var etfA=Math.max(0,S.etf-S.ownA)+extraA;
+  var loanB=Math.max(0,need-S.ownB);
+  var etfB=Math.max(0,S.etf-S.ownB-S.prepayOld)+Math.max(0,S.ownB-need);
+  var schA=schedule(loanA,S.rateA,S.term,S.insA,S.dRate,0);
+  var schB=schedule(loanB,S.rateB,S.term,S.insB,S.dRate,0);
+  var oldB=schedule(S.oldBal,S.oldRate,S.oldTerm,S.oldIns,S.dRate,S.prepayOld);
+  var oldC=schedule(S.oldBal,S.oldRate,S.oldTerm,S.oldIns,S.dRate,0);
+  var newOther=S.newSvj+S.newEnergy+S.newIns;
+  var gf=function(y){return Math.pow(1+infl,y);};
+  function taxFor(old,y){
+    var f=gf(y),rentY=S.rent*S.occ*f;
+    if(S.taxMode==='flat')return 0.15*0.7*rentY;
+    var exp=sumY(old.int,y)+sumY(old.ins,y)+(S.svjOwner+S.misc)*12*f+S.repairs/100*rentY;
+    return 0.15*Math.max(0,rentY-exp);
+  }
+  /* první měsíc */
+  var rentM=S.rent*S.occ/12,tax1=taxFor(oldB,0)/12;
+  var oldNet=rentM-oldB.pay[1]-oldB.ins[1]-S.svjOwner-S.repairs/100*rentM-S.misc-tax1;
+  var A={loan:loanA,pay:schA.pay[1],ins:schA.ins[1],other:newOther,oldNet:0,rate:S.rateA};
+  var B={loan:loanB,pay:schB.pay[1],ins:schB.ins[1],other:newOther,oldNet:oldNet,rate:S.rateB};
+  A.housing=A.pay+A.ins+newOther;
+  B.housing=B.pay+B.ins+newOther-oldNet;
+  var C={loan:0,pay:oldC.pay[1],ins:oldC.ins[1],other:S.oldSvjAll+S.oldEnergy+S.oldGarage,oldNet:0};
+  C.housing=C.pay+C.ins+C.other;
+  A.exp=B.exp=S.otherNew;C.exp=S.otherStay;
+  [A,B,C].forEach(function(x){
+    x.leftAvg=incAvg-x.exp-x.housing;x.leftBase=incBase-x.exp-x.housing;
+  });
+  /* limity */
+  var oldPayB=oldB.pay[1]+oldB.ins[1],oldPayC=oldC.pay[1]+oldC.ins[1];
+  A.debt=loanA;B.debt=loanB+oldB.bal[0];C.debt=oldC.bal[0];
+  A.dsAvgPay=A.pay+A.ins;B.dsAvgPay=B.pay+B.ins+oldPayB-S.bankRent/100*S.rent;C.dsAvgPay=oldPayC;
+  [A,B,C].forEach(function(x){
+    x.dstiAvg=x.dsAvgPay/incAvg;x.dstiBase=x.dsAvgPay/incBase;
+    x.dtiAvg=x.debt/(incAvg*12);x.dtiBase=x.debt/(incBase*12);
+  });
+  A.ltv=S.price>0?loanA/S.price:0;
+  var coll=S.price+Math.max(0,S.oldValue-S.oldBal);
+  B.ltv=coll>0?loanB/coll:0;
+  B.ltvAll=(S.price+S.oldValue)>0?(loanB+oldB.bal[0])/(S.price+S.oldValue):0;
+  C.ltv=S.oldValue>0?oldC.bal[0]/S.oldValue:0;
+  /* dlouhodobá simulace */
+  function run(kind,sch,old,E0,v0new,v0old){
+    var out=[],E=E0,mg=Math.pow(1+rE,1/12);
+    function nw(m){
+      var yrs=m/12,w=E;
+      if(sch)w+=v0new*Math.pow(1+g,yrs)-sch.bal[m];
+      if(old)w+=v0old*(1-comm)*Math.pow(1+g,yrs)-old.bal[m];
+      return w;
+    }
+    out.push(nw(0));
+    var taxCache={};
+    for(var m=1;m<=360;m++){
+      var y=Math.floor((m-1)/12),f=gf(y);
+      var left=(incAvg-(kind==='C'?S.otherStay:S.otherNew))*f;
+      if(kind==='A'){left-=sch.pay[m]+sch.ins[m]+newOther*f;}
+      else if(kind==='B'){
+        if(taxCache[y]===undefined)taxCache[y]=taxFor(old,y)/12;
+        var rm=rentM*f;
+        left-=sch.pay[m]+sch.ins[m]+newOther*f;
+        left+=rm-old.pay[m]-old.ins[m]-(S.svjOwner+S.misc)*f-S.repairs/100*rm-taxCache[y];
+      }else{left-=old.pay[m]+old.ins[m]+(S.oldSvjAll+S.oldEnergy+S.oldGarage)*f;}
+      E=E*mg+left;
+      if(m%12===0)out.push(nw(m));
+    }
+    return out;
+  }
+  A.nw=run('A',schA,null,etfA,S.price,0);
+  B.nw=run('B',schB,oldB,etfB,S.price,S.oldValue);
+  C.nw=run('C',null,oldC,S.etf,0,S.oldValue);
+  A.etf=etfA;B.etf=etfB;C.etf=S.etf;
+  return {A:A,B:B,C:C,incAvg:incAvg,incBase:incBase,proceeds:proceeds,need:need,extraA:extraA,rentM:rentM,tax1:tax1};
+}
+function breakEven(S,T){
+  function d(gv){var r=calc(S,gv*100);return r.B.nw[T]-r.A.nw[T];}
+  var lo=-0.10,hi=0.25,dl=d(lo),dh=d(hi);
+  if(dl>=0)return -Infinity;
+  if(dh<=0)return Infinity;
+  for(var i=0;i<30;i++){var mid=(lo+hi)/2;if(d(mid)>0)hi=mid;else lo=mid;}
+  return (lo+hi)/2*100;
+}
+
+/* ---------- vstupy ---------- */
+var inEl=document.getElementById('inputs');
+function buildInputs(){
+  var h='';
+  GROUPS.forEach(function(g,gi){
+    h+='<details class="grp"'+(gi<1?' open':'')+'><summary>'+g.t+'</summary><div class="fields">';
+    g.f.forEach(function(f){
+      var id=f[0];
+      if(f[2]==='select'){
+        h+='<label class="f"><span class="l">'+f[1]+'</span><span class="in"><select id="'+id+'"><option value="real">Skutečné výdaje včetně úroků</option><option value="flat">Paušál 30 % výdajů</option></select></span></label>';
+      }else{
+        h+='<label class="f"><span class="l">'+f[1]+'</span><span class="in"><input id="'+id+'" inputmode="decimal" autocomplete="off" data-d="'+(f[4]||0)+'"><span class="u">'+f[2]+'</span></span></label>';
+      }
+    });
+    h+='</div></details>';
+  });
+  inEl.innerHTML=h;
+}
+function fillInputs(){
+  GROUPS.forEach(function(g){g.f.forEach(function(f){
+    var el=document.getElementById(f[0]);if(!el)return;
+    if(f[2]==='select')el.value=S[f[0]];else el.value=nf(f[4]||0).format(S[f[0]]);
+  });});
+}
+inEl.addEventListener('input',function(e){
+  var el=e.target,id=el.id;if(!(id in S))return;
+  S[id]=(id==='taxMode')?el.value:parse(el.value);
+  save();render();
+});
+inEl.addEventListener('change',function(e){
+  var el=e.target,id=el.id;if(!(id in S)||id==='taxMode')return;
+  el.value=nf(parseInt(el.dataset.d||'0',10)).format(S[id]);
+});
+inEl.addEventListener('focusin',function(e){if(e.target.tagName==='INPUT')e.target.select();});
+document.getElementById('reset').addEventListener('click',function(){S=Object.assign({},DEF);save();fillInputs();render();});
+
+var io=document.getElementById('io'),iot=document.getElementById('iot'),iomsg=document.getElementById('iomsg');
+function showIo(txt,msg){io.hidden=false;iot.value=txt;iomsg.textContent=msg||'';if(txt){iot.focus();iot.select();}else iot.focus();}
+document.getElementById('exp').addEventListener('click',function(){
+  var txt=JSON.stringify(S);
+  var fallback=function(){showIo(txt,'Označ text a zkopíruj ho, pak ho vlož do kalkulačky jinde.');};
+  try{navigator.clipboard.writeText(txt).then(function(){showIo(txt,'Zkopírováno. Ulož si text nebo ho pošli, vložíš ho tlačítkem Vložit hodnoty.');},fallback);}catch(e){fallback();}
+});
+document.getElementById('imp').addEventListener('click',function(){if(io.hidden)showIo('','Vlož zkopírované hodnoty a klikni na Použít.');else io.hidden=true;});
+document.getElementById('iook').addEventListener('click',function(){
+  try{
+    var o=JSON.parse(iot.value),n=0;
+    for(var k in DEF){if(k in o&&typeof o[k]===typeof DEF[k]){S[k]=o[k];n++;}}
+    if(!n)throw new Error('prázdné');
+    save();fillInputs();render();iomsg.textContent='Načteno '+n+' hodnot.';
+  }catch(e){iomsg.textContent='Text se nepodařilo načíst. Zkopíruj hodnoty znovu.';}
+});
+var tabR=document.getElementById('tabR'),tabI=document.getElementById('tabI');
+function setTab(i){document.body.classList.toggle('show-inputs',i);tabR.setAttribute('aria-pressed',String(!i));tabI.setAttribute('aria-pressed',String(i));window.scrollTo(0,0);}
+tabR.addEventListener('click',function(){setTab(false);});
+tabI.addEventListener('click',function(){setTab(true);});
+
+/* ---------- výstup ---------- */
+var res=document.getElementById('results');
+var HZ=15;
+res.addEventListener('click',function(e){var t=e.target.closest('[data-hz]');if(t){HZ=parseInt(t.dataset.hz,10);render();}});
+var NAMES={A:'Prodat starý byt',B:'Ponechat a pronajímat',C:'Zůstat, nekupovat'};
+function sgn(x){return x<0?'neg':'';}
+function limit(v,warn,bad,fmt){var c=v>bad?'bad':(v>warn?'warn':'ok');return '<span class="'+c+'">'+fmt(v)+'</span>';}
+
+function chartSvg(R,years){
+  var W=640,H=300,L=52,Rr=12,T=10,Bm=28;
+  var all=[].concat(R.A.nw.slice(0,years+1),R.B.nw.slice(0,years+1),R.C.nw.slice(0,years+1));
+  var mn=Math.min.apply(null,all),mx=Math.max.apply(null,all);
+  if(mn>0)mn=0;if(mx<0)mx=0;
+  var step=niceStep((mx-mn)/5);
+  var y0=Math.floor(mn/step)*step,y1=Math.ceil(mx/step)*step;
+  var X=function(i){return L+(W-L-Rr)*i/years;},Y=function(v){return T+(H-T-Bm)*(1-(v-y0)/(y1-y0));};
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Vývoj čistého jmění ve třech variantách" id="chart">';
+  for(var v=y0;v<=y1+1e-6;v+=step){
+    s+='<line x1="'+L+'" x2="'+(W-Rr)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--line)" stroke-width="'+(Math.abs(v)<1e-6?1.5:0.7)+'"/>';
+    s+='<text x="'+(L-6)+'" y="'+(Y(v)+4)+'" text-anchor="end">'+nf0.format(v/1e6)+'</text>';
+  }
+  for(var yr=0;yr<=years;yr+=(years<=10?2:5)){
+    s+='<text x="'+X(yr)+'" y="'+(H-8)+'" text-anchor="middle">'+yr+'</text>';
+  }
+  [['A','var(--a)'],['B','var(--b)'],['C','var(--c)']].forEach(function(p){
+    var d='';R[p[0]].nw.slice(0,years+1).forEach(function(v,i){d+=(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1);});
+    s+='<path d="'+d+'" fill="none" stroke="'+p[1]+'" stroke-width="2.4" stroke-linejoin="round"/>';
+    var last=R[p[0]].nw[years];
+    s+='<circle cx="'+X(years)+'" cy="'+Y(last)+'" r="3.5" fill="'+p[1]+'"/>';
+  });
+  s+='<line id="cur" x1="0" x2="0" y1="'+T+'" y2="'+(H-Bm)+'" stroke="var(--muted)" stroke-width="1" style="display:none"/>';
+  s+='</svg>';
+  return {svg:s,L:L,W:W,Rr:Rr,years:years};
+}
+function niceStep(x){if(x<=0)return 1e6;var p=Math.pow(10,Math.floor(Math.log10(x))),m=x/p;return (m<=1?1:m<=2?2:m<=5?5:10)*p;}
+
+function render(){
+  var R=calc(S);
+  var best=R.A.leftAvg>=R.B.leftAvg?'A':'B';
+  var h='<h2>Měsíčně, po refixaci</h2><div class="cards">';
+  ['A','B','C'].forEach(function(k){
+    var x=R[k];
+    var d=k==='A'?'Úvěr '+mil(x.loan)+', sazba '+pc(x.rate,2):k==='B'?'Úvěr '+mil(x.loan)+' na nový a '+mil(R.B.debt-x.loan)+' na starý byt':'Bez koupě, hypotéka na starém bytě '+mil(x.debt);
+    h+='<div class="card '+k+'"><h3><span>'+NAMES[k]+'</span>'+(k===best?'<span class="tag">víc zbývá</span>':'')+'</h3><div class="d">'+d+'</div>';
+    h+='<div class="cap">Bydlení celkem</div><div class="big">'+kc(x.housing)+'</div>';
+    h+='<div class="row"><span>Zbývá měsíčně po všech výdajích</span><b class="'+sgn(x.leftAvg)+'">'+kc(x.leftAvg)+'</b></div>';
+    h+='<div class="row"><span>Rezerva (úspory) po koupi</span><b>'+kc(x.etf)+'</b></div></div>';
+  });
+  h+='</div>';
+
+  /* rozpočet */
+  h+='<h2>Měsíční rozpočet</h2><div class="tw"><table><thead><tr><th></th>'+['A','B','C'].map(function(k){return '<th class="'+k+'"><span class="dot"></span>'+NAMES[k]+'</th>';}).join('')+'</tr></thead><tbody>';
+  function tr(l,fn,cls){h+='<tr'+(cls?' class="'+cls+'"':'')+'><td>'+l+'</td>'+['A','B','C'].map(function(k){return '<td>'+fn(R[k],k)+'</td>';}).join('')+'</tr>';}
+  function sec(l){h+='<tr class="sec"><td colspan="4">'+l+'</td></tr>';}
+  sec('Příjem');
+  tr('Čistý příjem domácnosti',function(){return kc(R.incAvg);});
+  sec('Bydlení');
+  tr('Splátka nového úvěru',function(x,k){return k==='C'?'–':kc(x.pay);});
+  tr('Pojištění splácení nového úvěru',function(x,k){return k==='C'?'–':kc(x.ins);});
+  tr('Zálohy, energie, pojištění nového bytu',function(x,k){return k==='C'?'–':kc(x.other);});
+  tr('Starý byt: splátka hypotéky vč. pojištění',function(x,k){return k==='C'?kc(x.pay+x.ins):'–';});
+  tr('Starý byt: zálohy, energie, garáž',function(x,k){return k==='C'?kc(x.other):'–';});
+  tr('Starý byt: čistý přebytek z pronájmu',function(x,k){return k==='B'?'<span class="'+(x.oldNet>=0?'pos':'neg')+'">'+kc(x.oldNet)+'</span>':'–';});
+  tr('Bydlení celkem',function(x){return kc(x.housing);},'tot');
+  sec('Co zbývá');
+  tr('Ostatní výdaje domácnosti',function(x){return kc(x.exp);});
+  tr('Zbývá při průměrném příjmu',function(x){return '<b class="'+sgn(x.leftAvg)+'">'+kc(x.leftAvg)+'</b>';},'tot');
+  tr('Bydlení jako podíl průměrného příjmu',function(x){return pc(x.housing/R.incAvg*100,0);});
+  h+='</tbody></table></div>';
+  h+='<p class="note">Nájemné vlastník dostane jen v obsazených měsících. Čistý přebytek z pronájmu už zahrnuje splátku staré hypotéky, poplatky SVJ vlastníka, opravy, prázdné měsíce a daň z nájmu ('+kc(R.tax1*12)+' ročně v prvním roce).</p>';
+
+  /* financování */
+  h+='<h2>Financování a limity bank</h2><div class="tw"><table><thead><tr><th></th>'+['A','B','C'].map(function(k){return '<th class="'+k+'"><span class="dot"></span>'+NAMES[k]+'</th>';}).join('')+'</tr></thead><tbody>';
+  tr('Potřeba na koupi (cena + vybavení)',function(x,k){return k==='C'?'–':kc(R.need);});
+  tr('Čistý výtěžek z prodeje starého bytu',function(x,k){return k==='A'?kc(R.proceeds):'–';});
+  tr('Vlastní peníze vložené do koupě',function(x,k){return k==='A'?kc(S.ownA):k==='B'?kc(S.ownB):'–';});
+  tr('Nový úvěr',function(x,k){return k==='C'?'–':'<b>'+kc(x.loan)+'</b>';},'tot');
+  tr('Celkový dluh (nový + starý)',function(x){return kc(x.debt);});
+  tr('LTV nového úvěru',function(x,k){return k==='C'?pc(x.ltv*100,0)+' (starý)':limit(x.ltv*100,70,80,function(v){return pc(v,0);});});
+  tr('LTV všech dluhů vůči oběma bytům',function(x,k){return k==='B'?limit(x.ltvAll*100,70,80,function(v){return pc(v,0);}):'–';});
+  tr('Dluh k ročnímu příjmu (DTI)',function(x){return limit(x.dtiAvg,7,8.5,function(v){return nf1.format(v);});});
+  tr('Splátky k příjmu (DSTI)',function(x){return limit(x.dstiAvg*100,45,55,function(v){return pc(v,0);});});
+  h+='</tbody></table></div>';
+  h+='<p class="note">Orientační hranice: DTI do 7 (doporučení ČNB u investičních hypoték), LTV do 70–80 %, splátky do 45–50 % čistého příjmu. U varianty „Ponechat“ se do DSTI počítá jen '+S.bankRent+' % nájmu. Skutečné posouzení dělá banka a prémie může uznat jen částečně.</p>';
+
+  /* jmění */
+  var ch=chartSvg(R,HZ);
+  h+='<h2>Čisté jmění v čase</h2><div class="chartbox"><div class="hz" role="group" aria-label="Horizont grafu">'+[10,15,25,30].map(function(t){return '<button type="button" data-hz="'+t+'" aria-pressed="'+(t===HZ)+'">'+t+' let</button>';}).join('')+'</div><div class="legend">'+['A','B','C'].map(function(k){return '<span class="'+k+'" style="--k:var(--'+k.toLowerCase()+')">'+NAMES[k]+'</span>';}).join('')+'</div>'+ch.svg+'<div class="tip" id="tip"></div></div>';
+  h+='<p class="note">Čisté jmění = hodnota bytů + úspory a našetřené přebytky − dluhy, v mil. Kč. Každý měsíc zbylé peníze se investují s výnosem '+pc(S.rEtf,1)+'. Starý byt se oceňuje po odečtení nákladů prodeje.</p>';
+  h+='<div class="tw" style="margin-top:10px"><table><thead><tr><th>Za</th>'+['A','B','C'].map(function(k){return '<th class="'+k+'"><span class="dot"></span>'+NAMES[k]+'</th>';}).join('')+'<th>Ponechat − prodat</th></tr></thead><tbody>';
+  [10,15,25].forEach(function(t){
+    var d=R.B.nw[t]-R.A.nw[t];
+    h+='<tr><td>'+t+' let</td><td>'+mil(R.A.nw[t])+'</td><td>'+mil(R.B.nw[t])+'</td><td>'+mil(R.C.nw[t])+'</td><td><b class="'+(d>=0?'pos':'neg')+'">'+(d>=0?'+':'−')+mil(Math.abs(d))+'</b></td></tr>';
+  });
+  h+='</tbody></table></div>';
+
+  /* závěr */
+  var be={};[10,15,25].forEach(function(t){be[t]=breakEven(S,t);});
+  function beTxt(v){if(v===-Infinity)return 'vždy';if(v===Infinity)return 'ani při 25 % ročně';return 'nad '+nf1.format(v)+NB+'% ročně';}
+    h+='<h2>Shrnutí při těchto vstupech</h2><div class="verdict"><ul>';
+  h+='<li>Ponechání starého bytu stojí měsíčně o <b>'+kc(Math.abs(R.B.housing-R.A.housing))+'</b> '+(R.B.housing>=R.A.housing?'víc':'méně')+' než prodej. Zbývá '+kc(R.B.leftAvg)+' proti '+kc(R.A.leftAvg)+' při prodeji.</li>';
+  h+='<li>Ponechání se v čistém jmění vyplatí při růstu cen bytů '+beTxt(be[10])+' (po 10 letech), '+beTxt(be[15])+' (po 15 letech), '+beTxt(be[25])+' (po 25 letech). Teď počítáš s '+pc(S.gHouse,1)+'.</li>';
+  var warn=[];
+  if(R.B.dtiAvg>7)warn.push('DTI '+nf1.format(R.B.dtiAvg)+' při ponechání je nad doporučenou hranicí 7');
+  if(R.B.dstiAvg>0.5)warn.push('splátky při ponechání by dělaly '+pc(R.B.dstiAvg*100,0)+' příjmu');
+  if(R.B.leftAvg<10000)warn.push('při ponechání zbývá méně než 10 tis. měsíčně');
+  if(R.A.leftAvg<10000)warn.push('při prodeji zbývá méně než 10 tis. měsíčně');
+  h+='<li>'+(warn.length?'Pozor: '+warn.join('; ')+'.':'Žádný z hlavních limitů není při těchto vstupech výrazně překročen.')+'</li>';
+  h+='</ul></div>';
+  res.innerHTML=h;
+  bindChart(R,ch);
+}
+function bindChart(R,ch){
+  var svg=document.getElementById('chart'),tip=document.getElementById('tip'),cur=document.getElementById('cur');
+  if(!svg)return;
+  function move(e){
+    var r=svg.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*ch.W;
+    var i=Math.round((px-ch.L)/(ch.W-ch.L-ch.Rr)*ch.years);
+    if(i<0||i>ch.years){hide();return;}
+    var x=ch.L+(ch.W-ch.L-ch.Rr)*i/ch.years;
+    cur.setAttribute('x1',x);cur.setAttribute('x2',x);cur.style.display='';
+    tip.innerHTML='<b>Za '+i+' let</b><br>Prodat: '+mil(R.A.nw[i])+'<br>Ponechat: '+mil(R.B.nw[i])+'<br>Zůstat: '+mil(R.C.nw[i]);
+    tip.style.display='block';
+    var box=svg.parentNode.getBoundingClientRect();
+    var left=e.clientX-box.left+12;
+    if(left+tip.offsetWidth>box.width-4)left=e.clientX-box.left-tip.offsetWidth-12;
+    tip.style.left=Math.max(4,left)+'px';tip.style.top=(e.clientY-box.top+8)+'px';
+  }
+  function hide(){tip.style.display='none';cur.style.display='none';}
+  svg.addEventListener('pointermove',move);svg.addEventListener('pointerleave',hide);
+}
+buildInputs();fillInputs();render();
+})();
+</script>
+</body></html>
