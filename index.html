@@ -1,3 +1,5 @@
+<!doctype html>
+<html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Kalkulačka většího bytu</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap">
@@ -70,7 +72,7 @@ svg{display:block;width:100%;height:auto}
   .cards{grid-template-columns:minmax(0,1fr)}
   .f .in{flex-basis:140px}
 }
-</style>
+</style></head><body>
 
 <div class="wrap">
   <header>
@@ -82,6 +84,7 @@ svg{display:block;width:100%;height:auto}
       <button id="clear" type="button" class="danger">Vymazat vše</button>
       <button id="demo" type="button">Vrátit ukázku</button>
       <button id="complex" type="button" onclick="location.href='komplexni.html'">Komplexní kalkulačka (BETA)</button>
+      <button id="profiles" type="button" onclick="location.href='profily.html'">Profily nemovitostí</button>
       <button id="share" type="button">Zkopírovat odkaz s mými čísly</button>
     </div>
   </header>
@@ -328,3 +331,4 @@ build();fill();render();
 setStatus('Předvyplněná ukázka. Tlačítkem Vymazat vše začneš s čistým stolem.');
 })();
 </script>
+</body></html>
