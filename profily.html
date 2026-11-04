@@ -199,6 +199,7 @@ try{var pm=/^#p=(.+)$/.exec(location.hash);if(pm){var po=JSON.parse(decodeURICom
   var pv={};PIDS.forEach(function(k){pv[k]=num(po.v&&po.v[k])?po.v[k]:0;});
   profiles.push({id:nextId,name:String(po.name||'Profil').slice(0,60),note:String(po.note||'').slice(0,200),v:pv});sel=nextId++;
   history.replaceState(null,'',location.pathname+location.search);}}catch(e){}
+window.addEventListener('hashchange',function(){location.reload();});
 function save(){try{localStorage.setItem(KEY,JSON.stringify({base:base,profiles:profiles,sel:sel}));}catch(e){}}
 function cur(){for(var i=0;i<profiles.length;i++)if(profiles[i].id===sel)return profiles[i];return profiles[0];}
 
