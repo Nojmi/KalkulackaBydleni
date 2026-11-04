@@ -169,7 +169,7 @@ BG.forEach(function(g){g.f.forEach(function(f){BDEF[f[0]]=f[3];BIDS.push(f[0]);}
 function seed(){return [
  {id:1,name:'Silurská 4+kk, 94 m²',note:'Ukázka',v:{price:13998700,reno:350000,newServ:17000,usedA:1000000,usedB:1000000,rateA:5,rateB:5.29,term:30,insA:5000,insB:6500}},
  {id:2,name:'Sazovická, Zličín 4+kk, 116 m²',note:'Terasa, 2 garážová stání. Zálohy a pojištění jsou odhad.',v:{price:17950000,reno:350000,newServ:11650,usedA:1000000,usedB:1000000,rateA:4.79,rateB:4.79,term:30,insA:6900,insB:9976}},
- {id:3,name:'Kutrovická, Řepy 4+kk, 141 m²',note:'3. NP z 4, rok 2015, 2 garážová stání a sklep v ceně, cena vč. provize a právního servisu. Zálohy a pojištění jsou odhad.',v:{price:16950000,reno:350000,newServ:15000,usedA:1000000,usedB:1000000,rateA:4.79,rateB:4.79,term:30,insA:6325,insB:9372}}
+ {id:3,name:'Kutrovická, Řepy 4+kk, 141 m²',note:'3. NP z 4, rok 2015, 2 garážová stání a sklep v ceně, cena vč. provize a právního servisu. Pojištění podle kalkulačky Moneta (6 336 Kč při hypotéce 11 mil.), zálohy jsou odhad.',v:{price:16950000,reno:350000,newServ:15000,usedA:1000000,usedB:1000000,rateA:4.79,rateB:4.79,term:30,insA:6336,insB:9386}}
 ];}
 
 var KEY='kalkulacka-profily-v1',OLDKEY='kalkulacka-vetsiho-bytu-v1';
@@ -194,6 +194,11 @@ function adopt(o){
 try{var old=localStorage.getItem(OLDKEY);if(old){var oo=JSON.parse(old);BIDS.forEach(function(k){if(num(oo[k]))base[k]=oo[k];});}}catch(e){}
 try{var raw=localStorage.getItem(KEY);if(raw)adopt(JSON.parse(raw));}catch(e){}
 try{var hm=/^#d=(.+)$/.exec(location.hash);if(hm)adopt(JSON.parse(decodeURIComponent(escape(atob(hm[1])))));}catch(e){}
+/* odkaz #p=... přidá jeden profil k existujícím, nic nepřepisuje */
+try{var pm=/^#p=(.+)$/.exec(location.hash);if(pm){var po=JSON.parse(decodeURIComponent(escape(atob(pm[1]))));
+  var pv={};PIDS.forEach(function(k){pv[k]=num(po.v&&po.v[k])?po.v[k]:0;});
+  profiles.push({id:nextId,name:String(po.name||'Profil').slice(0,60),note:String(po.note||'').slice(0,200),v:pv});sel=nextId++;
+  history.replaceState(null,'',location.pathname+location.search);}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify({base:base,profiles:profiles,sel:sel}));}catch(e){}}
 function cur(){for(var i=0;i<profiles.length;i++)if(profiles[i].id===sel)return profiles[i];return profiles[0];}
 
@@ -455,7 +460,7 @@ document.getElementById('share').addEventListener('click',function(){
   try{navigator.clipboard.writeText(url).then(function(){setStatus('Odkaz se všemi profily je zkopírovaný. Kdo ho otevře, uvidí tato čísla.');},fb);}catch(e){fb();}
 });
 
-build();refreshAll();
+save();build();refreshAll();
 setStatus('Ukázkové profily Silurská, Sazovická a Kutrovická. Úroky, zálohy a pojištění jsou odhad, přepiš je podle nabídky.');
 })();
 </script>
