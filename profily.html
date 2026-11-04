@@ -168,11 +168,12 @@ BG.forEach(function(g){g.f.forEach(function(f){BDEF[f[0]]=f[3];BIDS.push(f[0]);}
 /* Ukázkové profily: Silurská a Sazovická jsou odhady, přepiš je podle nabídky banky */
 function seed(){return [
  {id:1,name:'Silurská 4+kk, 94 m²',note:'Ukázka',v:{price:13998700,reno:350000,newServ:17000,usedA:1000000,usedB:1000000,rateA:5,rateB:5.29,term:30,insA:5000,insB:6500}},
- {id:2,name:'Sazovická, Zličín 4+kk, 116 m²',note:'Terasa, 2 garážová stání. Zálohy a pojištění jsou odhad.',v:{price:17950000,reno:350000,newServ:11650,usedA:1000000,usedB:1000000,rateA:4.79,rateB:4.79,term:30,insA:6900,insB:9976}}
+ {id:2,name:'Sazovická, Zličín 4+kk, 116 m²',note:'Terasa, 2 garážová stání. Zálohy a pojištění jsou odhad.',v:{price:17950000,reno:350000,newServ:11650,usedA:1000000,usedB:1000000,rateA:4.79,rateB:4.79,term:30,insA:6900,insB:9976}},
+ {id:3,name:'Kutrovická, Řepy 4+kk, 141 m²',note:'3. NP z 4, rok 2015, 2 garážová stání a sklep v ceně, cena vč. provize a právního servisu. Zálohy a pojištění jsou odhad.',v:{price:16950000,reno:350000,newServ:15000,usedA:1000000,usedB:1000000,rateA:4.79,rateB:4.79,term:30,insA:6325,insB:9372}}
 ];}
 
 var KEY='kalkulacka-profily-v1',OLDKEY='kalkulacka-vetsiho-bytu-v1';
-var base=JSON.parse(JSON.stringify(BDEF)),profiles=seed(),sel=1,nextId=3;
+var base=JSON.parse(JSON.stringify(BDEF)),profiles=seed(),sel=1,nextId=4;
 
 function num(x){return typeof x==='number'&&isFinite(x);}
 function adopt(o){
@@ -445,8 +446,8 @@ inEl.addEventListener('click',function(e){
 });
 
 document.getElementById('demo').addEventListener('click',function(){
-  base=JSON.parse(JSON.stringify(BDEF));profiles=seed();sel=1;nextId=3;save();refreshAll();
-  setStatus('Vrácena ukázka se dvěma profily a výchozími společnými údaji.');
+  base=JSON.parse(JSON.stringify(BDEF));profiles=seed();sel=1;nextId=4;save();refreshAll();
+  setStatus('Vrácena ukázka se třemi profily a výchozími společnými údaji.');
 });
 document.getElementById('share').addEventListener('click',function(){
   var url=location.href.split('#')[0]+'#d='+btoa(unescape(encodeURIComponent(JSON.stringify({base:base,profiles:profiles,sel:sel}))));
@@ -455,7 +456,7 @@ document.getElementById('share').addEventListener('click',function(){
 });
 
 build();refreshAll();
-setStatus('Ukázkové profily Silurská a Sazovická. Úroky, zálohy a pojištění jsou odhad, přepiš je podle nabídky.');
+setStatus('Ukázkové profily Silurská, Sazovická a Kutrovická. Úroky, zálohy a pojištění jsou odhad, přepiš je podle nabídky.');
 })();
 </script>
 </body></html>
