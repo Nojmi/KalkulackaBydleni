@@ -108,7 +108,7 @@ body{margin:0}
 </head><body>
 
 <div class="wrap">
-  <a class="back" href="./">← Zpět na jednoduchou kalkulačku</a>
+  <nav id="nav" style="margin-bottom:12px" aria-label="Stránky"></nav>
   <header class="top">
     <div>
       <h1>Kalkulačka bydlení</h1>
@@ -116,6 +116,8 @@ body{margin:0}
     </div>
     <div class="btns"><button class="ghost" id="exp" type="button">Zkopírovat hodnoty</button><button class="ghost" id="imp" type="button">Vložit hodnoty</button><button class="ghost" id="reset" type="button">Obnovit výchozí</button></div>
   </header>
+  <div id="chips" style="margin-bottom:10px"></div>
+  <p class="note" id="shareNote" style="margin:0 0 14px"></p>
   <div class="io" id="io" hidden><textarea id="iot" rows="4" aria-label="Hodnoty kalkulačky" placeholder="Sem vlož zkopírované hodnoty"></textarea><div class="iob"><button class="ghost" id="iook" type="button">Použít hodnoty</button><span id="iomsg" class="note"></span></div></div>
   <div class="tabs" role="group" aria-label="Zobrazení">
     <button type="button" id="tabR" aria-pressed="true">Výsledky</button>
@@ -128,6 +130,7 @@ body{margin:0}
   <footer>Orientační model, ne nabídka banky ani finanční či daňové poradenství. Splátky jsou anuitní, pojištění splácení se počítá z aktuálního zůstatku. Pravidla (daně, limity ČNB) jsou pro Česko. Příjmy, výdaje, zálohy a nájem rostou stejným tempem, splátky ne. Prodej bytu se počítá bez daně (časový test 10 let nebo bydliště 2 roky). Hodnoty se ukládají jen v tomto prohlížeči.</footer>
 </div>
 
+<script src="shared.js"></script>
 <script>
 (function(){
 'use strict';
@@ -135,8 +138,6 @@ var LS_KEY='bydleni-kalkulacka-v3';
 var GROUPS=[
  {t:'Základní údaje (stačí vyplnit jen tyto)',f:[
   ['incAvg','Čistý měsíční příjem domácnosti (průměr za posledních 3 až 12 měsíců)','Kč/měs',180000],
-  ['otherNew','Ostatní měsíční výdaje domácnosti (jídlo, auto, děti, spoření), po koupi','Kč/měs',40000],
-  ['otherStay','Ostatní měsíční výdaje, když zůstanete v bytě','Kč/měs',40000],
   ['oldValue','Hodnota starého bytu','Kč',8200000],
   ['oldBal','Zbývá doplatit hypotéku dnes','Kč',3000000],
   ['oldRate','Úrok staré hypotéky dnes','% p. a.',1.9,2],
@@ -190,11 +191,34 @@ var GROUPS=[
   ['rEtf','Výnos investic ročně','%',0,1]
  ]}
 ];
-var DEF={taxMode:'real'};
+var DEF={taxMode:'real',otherNew:40000,otherStay:40000};
 GROUPS.forEach(function(g){g.f.forEach(function(f){if(f[2]!=='select')DEF[f[0]]=f[3];});});
 var S=Object.assign({},DEF);
 try{var raw=localStorage.getItem(LS_KEY);if(raw){var o=JSON.parse(raw);for(var k in DEF){if(k in o&&typeof o[k]===typeof DEF[k])S[k]=o[k];}}}catch(e){}
 function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(S));}catch(e){}}
+/* společné údaje a profil nemovitosti jsou ve sdíleném úložišti (shared.js) */
+var BY=window.BYD;
+var MAPB={incAvg:'income',oldValue:'oldValue',oldBal:'oldBal',oldRate:'oldRate',monthsFix:'monthsFix',rateAfter:'rateAfter',oldTerm:'oldYears',etf:'savings',rent:'rent',occ:'occ',svjOwner:'owner',sellLegal:'sellCost'};
+var MAPP={price:'price',reno:'reno',term:'term',rateA:'rateA',rateB:'rateB',newSvj:'newServ',ownA:'usedA',ownB:'usedB'};
+function pull(){
+  var b=BY.st.base,p=BY.cur().v,k;
+  for(k in MAPB)S[k]=b[MAPB[k]];
+  for(k in MAPP)S[k]=p[MAPP[k]];
+  S.repairs=b.rent?b.repairs/b.rent*100:0;
+  S.oldSvjAll=b.oldServAfter;
+  S.otherNew=S.otherStay=BY.expTotal();
+}
+function push(k,v){
+  var b=BY.st.base,p=BY.cur().v;
+  if(k in MAPB)b[MAPB[k]]=v;
+  else if(k in MAPP)p[MAPP[k]]=v;
+  else if(k==='repairs')b.repairs=v*b.rent/100;
+  else if(k==='oldSvjAll'){b.oldServ=v;b.oldServAfter=v;}
+  else return false;
+  if(k==='rent')S.repairs=b.rent?b.repairs/b.rent*100:0;
+  BY.save();return true;
+}
+pull();
 
 var nf=function(d){return new Intl.NumberFormat('cs-CZ',{minimumFractionDigits:d,maximumFractionDigits:d});};
 var nf0=nf(0),nf1=nf(1),nf2=nf(2);
@@ -352,6 +376,7 @@ function fillInputs(){
 inEl.addEventListener('input',function(e){
   var el=e.target,id=el.id;if(!(id in S))return;
   S[id]=(id==='taxMode')?el.value:parse(el.value);
+  if(push(id,S[id])&&id==='rent'){var re=document.getElementById('repairs');if(re&&document.activeElement!==re)re.value=fmtField('repairs',1);}
   save();render();
 });
 inEl.addEventListener('change',function(e){
@@ -359,7 +384,7 @@ inEl.addEventListener('change',function(e){
   el.value=fmtField(id,parseInt(el.dataset.d||'0',10));
 });
 inEl.addEventListener('focusin',function(e){if(e.target.tagName==='INPUT')e.target.select();});
-document.getElementById('reset').addEventListener('click',function(){S=Object.assign({},DEF);save();fillInputs();render();});
+document.getElementById('reset').addEventListener('click',function(){S=Object.assign({},DEF);pull();save();fillInputs();render();});
 
 var io=document.getElementById('io'),iot=document.getElementById('iot'),iomsg=document.getElementById('iomsg');
 function showIo(txt,msg){io.hidden=false;iot.value=txt;iomsg.textContent=msg||'';if(txt){iot.focus();iot.select();}else iot.focus();}
@@ -374,7 +399,7 @@ document.getElementById('iook').addEventListener('click',function(){
     var o=JSON.parse(iot.value),n=0;
     for(var k in DEF){if(k in o&&typeof o[k]===typeof DEF[k]){S[k]=o[k];n++;}}
     if(!n)throw new Error('prázdné');
-    save();fillInputs();render();iomsg.textContent='Načteno '+n+' hodnot.';
+    for(var k2 in o){if(k2 in DEF)push(k2,S[k2]);}pull();save();fillInputs();render();iomsg.textContent='Načteno '+n+' hodnot.';
   }catch(e){iomsg.textContent='Text se nepodařilo načíst. Zkopíruj hodnoty znovu.';}
 });
 var tabR=document.getElementById('tabR'),tabI=document.getElementById('tabI');
@@ -514,7 +539,11 @@ function bindChart(R,ch){
   function hide(){tip.style.display='none';cur.style.display='none';}
   svg.addEventListener('pointermove',move);svg.addEventListener('pointerleave',hide);
 }
-buildInputs();fillInputs();render();
+function noteShared(){document.getElementById('shareNote').textContent='Nemovitost ke koupi, příjem, starý byt, úspory a pronájem se sdílejí se základní kalkulačkou. Ostatní výdaje ('+kc(BY.expTotal())+' měsíčně) se berou z jejího rozpisu, roční výdaje jsou v jejím ročním přehledu.';}
+BY.mountNav(document.getElementById('nav'),'komplexni');
+BY.mountChips(document.getElementById('chips'),{editable:false});
+BY.onChange(function(){pull();save();fillInputs();render();noteShared();});
+buildInputs();fillInputs();render();noteShared();
 })();
 </script>
 </body></html>
