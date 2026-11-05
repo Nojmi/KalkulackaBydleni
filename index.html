@@ -81,6 +81,18 @@ svg{display:block;width:100%;height:auto}
 .verdict{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
 .verdict p{margin:0 0 6px}.verdict p:last-child{margin:0}
 .note{color:var(--muted);font-size:13px;margin:0}
+.sumbox{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:14px}
+.sumbox h2{margin:0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.tile{background:var(--bg);border:1px solid var(--line);border-top:4px solid var(--k);border-radius:8px;padding:10px 12px}
+.tile.A{--k:var(--a)}.tile.B{--k:var(--b)}.tile.C{--k:var(--c)}.tile.D{--k:var(--d)}
+.tile .cap{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.big2{font-size:21px;font-weight:700;line-height:1.2;margin-top:2px}
+.badge{display:inline-block;margin-top:6px;padding:2px 8px;border-radius:999px;background:var(--ink);color:var(--bg);font-size:11.5px;font-weight:600}
+.facts{margin:0;padding-left:18px}.facts li{margin:3px 0}
+.opinion{border-left:4px solid var(--ink);background:var(--bg);border-radius:0 8px 8px 0;padding:10px 14px}
+.opinion h3{margin:0 0 6px;font-family:var(--cond);font-size:17px}
+.opinion p{margin:0 0 8px}.opinion p:last-child{margin:0}
 .why{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-right:6px;border:1px solid var(--muted);border-radius:50%;color:var(--muted);font:600 9px/1 var(--font);cursor:help;vertical-align:middle;opacity:.65;font-style:normal}
 .why:hover,.why:focus-visible,.why.on{opacity:1;color:var(--ink);border-color:var(--ink)}
 .card .why{margin:0 0 0 8px}
@@ -306,15 +318,48 @@ function render(){
 
   t+=bars(ORDER.map(function(k){return R[k].left;}),'Kolik zbývá měsíčně: '+esc(P.name),'Kolik zbývá měsíčně v jednotlivých variantách');
 
-  /* shrnutí */
-  var dBA=R.B.left-R.A.left;
-  t+='<div class="verdict"><h2>Shrnutí: '+esc(P.name)+'</h2>';
-  t+='<p>Splátka staré hypotéky vzroste po refixaci z <b>'+kc(R.payNow)+'</b> na <b>'+kc(R.oldPay)+'</b> měsíčně. Dnes ti po všech měsíčních výdajích zbývá <b>'+kc(R.D.left)+'</b>, po ročních výdajích <b>'+kc(R.D.yearLeft)+'</b> za rok.</p>';
-  t+='<p>Z prodeje starého bytu zbude po doplacení hypotéky a nákladech <b>'+kc(R.cash)+'</b>. Tento byt s vybavením stojí <b>'+kc(S.price+S.reno)+'</b>.</p>';
-  t+='<p>Za rok ti po všech výdajích zůstane: <b>'+kc(R.A.yearLeft)+'</b> při prodeji, <b>'+kc(R.B.yearLeft)+'</b> při pronájmu a <b>'+kc(R.C.yearLeft)+'</b>, když zůstaneš. Oproti dnešku to je '+kc(R.A.yearLeft-R.D.yearLeft)+' (prodej) a '+kc(R.B.yearLeft-R.D.yearLeft)+' (pronájem) ročně.</p>';
-  t+='<p>Když starý byt necháš a pronajmeš, zbývá měsíčně o <b>'+kc(Math.abs(dBA))+'</b> '+(dBA>=0?'víc':'méně')+' než při prodeji. Dluh je přitom o <b>'+kc(Math.abs(R.B.debt-R.A.debt))+'</b> '+(R.B.debt>=R.A.debt?'vyšší':'nižší')+'.</p>';
-  if(R.A.savLeft<0||R.B.savLeft<0)t+='<p class="neg">Do koupě vkládáš víc, než kolik máš úspor.</p>';
-  t+='<p class="note">Varianty počítají s tím, že fixace staré hypotéky skončila. Výsledky jsou orientační a nenahrazují nabídku banky.</p></div>';
+  /* shrnutí a můj názor */
+  var Dd=R.D,bestK=R.A.yearLeft>=R.B.yearLeft?'A':'B',bx=R[bestK],other=bestK==='A'?'B':'A';
+  function sd(v){return (v>=0?'+':'−')+kc(Math.abs(v));}
+  function pctOf(x){return Dd.yearLeft>0?Math.round(x.yearLeft/Dd.yearLeft*100):null;}
+  var tiles=['D','C','A','B'].map(function(k){
+    var x=R[k];
+    return '<div class="tile '+k+'"><div class="cap">'+NAMES[k]+'</div><div class="big2 '+sgn(x.yearLeft)+'">'+kc(x.yearLeft)+'</div>'+
+      '<div class="small">zbývá za rok, '+kc(x.yearMonthly)+' měsíčně</div>'+
+      (k==='D'?'<div class="small">výchozí stav</div>':'<div class="small">oproti dnes '+sd(x.yearLeft-Dd.yearLeft)+' ročně</div>')+
+      ((k==='A'||k==='B')&&k===bestK?'<div class="badge">z koupě vychází líp</div>':'')+'</div>';
+  }).join('');
+  var facts='<ul class="facts">'+
+    '<li>Splátka staré hypotéky po refixaci vzroste z <b>'+kc(R.payNow)+'</b> na <b>'+kc(R.oldPay)+'</b> měsíčně.</li>'+
+    '<li>Z prodeje starého bytu zbude po doplacení hypotéky a nákladech <b>'+kc(R.cash)+'</b>. Nový byt s vybavením stojí <b>'+kc(S.price+S.reno)+'</b>.</li>'+
+    '<li>Dnes ti po měsíčních výdajích zbývá <b>'+kc(Dd.left)+'</b>, po ročních výdajích <b>'+kc(Dd.yearLeft)+'</b> za rok.</li>'+
+    '<li>Při pronájmu je dluh o <b>'+kc(Math.abs(R.B.debt-R.A.debt))+'</b> '+(R.B.debt>=R.A.debt?'vyšší':'nižší')+' než při prodeji a zbývá o <b>'+kc(Math.abs(R.B.yearLeft-R.A.yearLeft))+'</b> ročně '+(R.B.yearLeft>=R.A.yearLeft?'víc':'méně')+'.</li></ul>';
+  /* názor podle čísel */
+  var op=[];
+  var nm=bestK==='A'?'prodej starého bytu':'pronájem starého bytu';
+  if(bx.yearLeft<0){
+    op.push('Podle těchto čísel <b>nevychází ani jedna varianta</b>: po všech výdajích jsi i v nejlepším případě v mínusu <b>'+kc(-bx.yearLeft)+'</b> ročně. Je potřeba levnější byt, větší vlastní vklad nebo nižší výdaje.');
+  }else{
+    var pc=pctOf(bx);
+    op.push('Podle čísel vychází líp <b>'+nm+'</b>. Po všech výdajích ti zbude <b>'+kc(bx.yearLeft)+'</b> ročně ('+kc(bx.yearMonthly)+' měsíčně)'+(pc!==null?', tedy asi <b>'+pc+' %</b> dnešního přebytku':'')+'. Dnes ti zbývá '+kc(Dd.yearLeft)+', takže životní standard se posune o <b>'+kc(Math.abs(bx.yearLeft-Dd.yearLeft))+'</b> ročně '+(bx.yearLeft>=Dd.yearLeft?'nahoru':'dolů')+'.');
+    if(bx.yearMonthly<10000)op.push('Přebytek '+kc(bx.yearMonthly)+' měsíčně je <b>tenký</b>. Jeden nečekaný větší výdaj (auto, oprava, výpadek příjmu) ho smaže, takže na investice nezbyde nic.');
+    else if(bx.yearMonthly<30000)op.push('Přebytek '+kc(bx.yearMonthly)+' měsíčně vystačí na rezervu a drobné investice, ale na větší spoření už moc ne.');
+    else op.push('Přebytek '+kc(bx.yearMonthly)+' měsíčně je solidní, vedle rezervy zůstane i na pravidelné investice.');
+  }
+  if(R.B.yearLeft!==R.A.yearLeft){
+    var dd=Math.abs(R.B.yearLeft-R.A.yearLeft);
+    if(bestK==='A')op.push('Pronájem tě stojí o <b>'+kc(dd)+'</b> ročně víc než prodej a zároveň držíš o '+kc(R.B.debt-R.A.debt)+' víc dluhu, takže jsi zranitelnější vůči zdražení úroků po fixaci i prázdnému bytu.');
+    else op.push('Pronájem ti ročně přinese o <b>'+kc(dd)+'</b> víc než prodej, ale držíš o '+kc(R.B.debt-R.A.debt)+' víc dluhu. Počítáš tedy s tím, že byt bude obsazený a úroky po fixaci nepůjdou nahoru.');
+  }
+  if(netAfter<0)op.push('Nájem po nákladech '+kc(netBefore)+' měsíčně <b>nepokryje</b> splátku staré hypotéky '+kc(mort)+', doplácíš '+kc(-netAfter)+' měsíčně.');
+  else op.push('Nájem po nákladech '+kc(netBefore)+' měsíčně pokryje splátku staré hypotéky '+kc(mort)+' a ještě zbyde '+kc(netAfter)+'.');
+  if(bx.yearLeft>=0||true){
+    var runway=(bx.savLeft>0)?bx.savLeft/(S.other+bx.housing+ann/12):0;
+    op.push('Po koupi ti zůstane <b>'+kc(bx.savLeft)+'</b> úspor, což vystačí asi na <b>'+fmtIn(Math.round(runway*10)/10,1)+(runway>=5?' měsíců':' měsíce')+'</b> celých výdajů domácnosti. '+(runway<3?'To je málo, doporučuje se mít aspoň 3 až 6 měsíců.':runway<6?'To je v pořádku, i když nad rezervu bych neměl chodit.':'To je pohodlná rezerva.'));
+  }
+  t+='<div class="sumbox"><h2>Shrnutí: '+esc(P.name)+'</h2><div class="tiles">'+tiles+'</div>'+facts+
+     '<div class="opinion"><h3>Můj názor</h3>'+op.map(function(x){return '<p>'+x+'</p>';}).join('')+
+     '<p class="note">Je to pohled z čísel, která jsi zadal, a nejsem finanční poradce. Výsledek závisí na odhadech výdajů, úroku po refixaci a obsazenosti bytu. Přesné parametry ověř u banky.</p></div></div>';
   outEl.innerHTML=t;
   var et=document.getElementById('expTot'),at=document.getElementById('annTot');
   if(et)et.textContent=kc(B.expTotal())+' / měs';
