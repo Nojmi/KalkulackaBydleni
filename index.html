@@ -160,6 +160,12 @@ function render(){
     if(x.rent)rows.push(['− příjem z pronájmu po nákladech',kc(-x.rent)]);
     rows.push(['Bydlení celkem',kc(x.housing),'sum']);return T('Bydlení celkem za měsíc',rows);
   }
+  function houseYearTip(x){
+    var rows=[];
+    [['Splátka nové hypotéky',x.pay],['Pojištění nové hypotéky',x.ins],['Zálohy a energie nového bytu',x.serv],['Splátka staré hypotéky',x.oldPay],['Pojištění staré hypotéky',x.oldIns],['Zálohy, energie a garáž starého bytu',x.oldServ]].forEach(function(a){if(a[1])rows.push([a[0]+' (12 ×)',kc(a[1]*12)]);});
+    if(x.rent)rows.push(['− příjem z pronájmu po nákladech (12 ×)',kc(-x.rent*12)]);
+    rows.push(['Bydlení za rok',kc(x.housing*12),'sum']);return T('Bydlení celkem za rok',rows);
+  }
   function hypTip(x){
     var rows=[];
     [['Splátka nové hypotéky',x.pay],['Pojištění nové hypotéky',x.ins],['Splátka staré hypotéky',x.oldPay],['Pojištění staré hypotéky',x.oldIns]].forEach(function(a){if(a[1])rows.push([a[0],kc(a[1])]);});
@@ -257,7 +263,7 @@ function render(){
   sec('Za celý rok');
   tr('Čistý příjem domácnosti',function(){return kc(S.income*12);});
   tr('Měsíční výdaje domácnosti',function(){return kc(-S.other*12);});
-  tr('Bydlení celkem',function(x){return kc(-x.housing*12);});
+  tr('Bydlení celkem',function(x){return houseYearTip(x)+kc(-x.housing*12);});
   tr('Roční výdaje (pojistky, dovolená, Vánoce, servis…)',function(){return kc(-ann);});
   tr('Zbývá za rok na investice a rezervu',function(x){return yearTip(x)+'<span class="'+sgn(x.yearLeft)+'">'+kc(x.yearLeft)+'</span>';},'tot');
   tr('Z toho v průměru měsíčně',function(x){return '<span class="'+sgn(x.yearMonthly)+'">'+kc(x.yearMonthly)+'</span>';});
