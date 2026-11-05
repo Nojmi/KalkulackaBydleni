@@ -134,7 +134,7 @@ body{margin:0}
 <script>
 (function(){
 'use strict';
-var LS_KEY='bydleni-kalkulacka-v3';
+var LS_KEY='bydleni-kalkulacka-v4';
 var GROUPS=[
  {t:'Základní údaje (stačí vyplnit jen tyto)',f:[
   ['incAvg','Čistý měsíční příjem domácnosti (průměr za posledních 3 až 12 měsíců)','Kč/měs',180000],
@@ -154,9 +154,9 @@ var GROUPS=[
   ['rentGrowth','Růst nájmu ročně','%',0,1]
  ]},
  {t:'Starý byt a jeho hypotéka',f:[
-  ['oldIns','Pojištění splácení staré hypotéky','% z úvěru/rok',0.44,2],
-  ['sellComm','Provize makléře při prodeji','%',0,1],
-  ['sellLegal','Právník a ostatní náklady prodeje','Kč',0],
+  ['oldInsNow','Pojištění splácení staré hypotéky dnes','Kč/měs',1100],
+  ['oldIns','Pojištění splácení staré hypotéky po refixaci','Kč/měs',1100],
+  ['sellLegal','Náklady prodeje celkem (provize makléře, právník)','Kč',0],
   ['oldSvjAll','Zálohy do SVJ / fondu, když v bytě bydlíte','Kč/měs',13000],
   ['oldEnergy','Elektřina a internet','Kč/měs',0],
   ['oldGarage','Garáž nebo parkování','Kč/měs',0]
@@ -170,10 +170,10 @@ var GROUPS=[
  {t:'Financování nového bytu',f:[
   ['ownA','Při prodeji: kolik z nich vložit do koupě','Kč',1000000],
   ['rateA','Při prodeji: sazba nového úvěru','%',5,2],
-  ['insA','Při prodeji: pojištění splácení','% z úvěru/rok',0.75,2],
+  ['insA','Při prodeji: pojištění splácení','Kč/měs',5000],
   ['prepayOld','Při ponechání: mimořádná splátka staré hypotéky','Kč',0],
   ['rateB','Při ponechání: sazba nového úvěru (obvykle vyšší, větší LTV)','%',5,2],
-  ['insB','Při ponechání: pojištění splácení','% z úvěru/rok',0.58,2],
+  ['insB','Při ponechání: pojištění splácení','Kč/měs',6500],
   ['term','Splatnost nového úvěru','let',30],
   ['dRate','Změna sazby po první fixaci (3 roky)','p. b.',0,2]
  ]},
@@ -181,10 +181,10 @@ var GROUPS=[
   ['rent','Měsíční nájem (bez záloh na služby)','Kč',28000],
   ['occ','Obsazené měsíce v roce','z 12',12],
   ['svjOwner','Poplatky SVJ, které platí vlastník (fond oprav, správa)','Kč/měs',3984],
-  ['repairs','Opravy a údržba','% z nájmu',3.6,1],
+  ['repairs','Opravy a údržba','Kč/měs',1000],
   ['misc','Daň z nemovitosti, pojištění, drobnosti','Kč/měs',0],
   ['taxMode','Zdanění nájmu','select'],
-  ['bankRent','Kolik nájmu uzná banka','%',0]
+  ['bankRent','Kolik nájmu uzná banka (obvykle asi 60 % nájmu)','Kč/měs',0]
  ]},
  {t:'Předpoklady vývoje',f:[
   ['gHouse','Růst cen bytů ročně','%',0,1],
@@ -198,13 +198,12 @@ try{var raw=localStorage.getItem(LS_KEY);if(raw){var o=JSON.parse(raw);for(var k
 function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(S));}catch(e){}}
 /* společné údaje a profil nemovitosti jsou ve sdíleném úložišti (shared.js) */
 var BY=window.BYD;
-var MAPB={incAvg:'income',oldValue:'oldValue',oldBal:'oldBal',oldRate:'oldRate',monthsFix:'monthsFix',rateAfter:'rateAfter',oldTerm:'oldYears',etf:'savings',rent:'rent',occ:'occ',svjOwner:'owner',sellLegal:'sellCost'};
-var MAPP={price:'price',reno:'reno',term:'term',rateA:'rateA',rateB:'rateB',newSvj:'newServ',ownA:'usedA',ownB:'usedB'};
+var MAPB={incAvg:'income',oldValue:'oldValue',oldBal:'oldBal',oldRate:'oldRate',monthsFix:'monthsFix',rateAfter:'rateAfter',oldTerm:'oldYears',etf:'savings',rent:'rent',occ:'occ',svjOwner:'owner',sellLegal:'sellCost',oldInsNow:'oldIns',oldIns:'oldInsAfter',repairs:'repairs'};
+var MAPP={price:'price',reno:'reno',term:'term',rateA:'rateA',rateB:'rateB',newSvj:'newServ',ownA:'usedA',ownB:'usedB',insA:'insA',insB:'insB'};
 function pull(){
   var b=BY.st.base,p=BY.cur().v,k;
   for(k in MAPB)S[k]=b[MAPB[k]];
   for(k in MAPP)S[k]=p[MAPP[k]];
-  S.repairs=b.rent?b.repairs/b.rent*100:0;
   S.oldSvjAll=b.oldServAfter;
   S.otherNew=S.otherStay=BY.expTotal();
 }
@@ -212,10 +211,8 @@ function push(k,v){
   var b=BY.st.base,p=BY.cur().v;
   if(k in MAPB)b[MAPB[k]]=v;
   else if(k in MAPP)p[MAPP[k]]=v;
-  else if(k==='repairs')b.repairs=v*b.rent/100;
   else if(k==='oldSvjAll'){b.oldServ=v;b.oldServAfter=v;}
   else return false;
-  if(k==='rent')S.repairs=b.rent?b.repairs/b.rent*100:0;
   BY.save();return true;
 }
 pull();
@@ -231,7 +228,7 @@ function parse(v){var x=parseFloat(String(v).replace(/[\s ]/g,'').replace(',','
 
 /* ---------- výpočty ---------- */
 function pmtF(P,r,n){if(P<=0)return 0;if(n<=0)return P;if(r===0)return P/n;return P*r/(1-Math.pow(1+r,-n));}
-function schedule(P,rate,years,insPct,delta,pre){
+function schedule(P,rate,years,insKc,delta,pre){
   var N=360,n=Math.round(Math.min(30,Math.max(1,years))*12);
   var b=Math.max(0,P-(pre||0)),r=rate/1200;
   var pay=pmtF(b,r,n);
@@ -240,7 +237,7 @@ function schedule(P,rate,years,insPct,delta,pre){
   for(var m=1;m<=N;m++){
     if(m===37&&delta){r=(rate+delta)/1200;var left=n-36;pay=(b>0&&left>0)?pmtF(b,r,left):b;}
     if(b<=0.5){A.bal[m]=0;continue;}
-    var i=b*r,insm=b*insPct/1200,p=Math.min(pay,b+i);
+    var i=b*r,insm=insKc,p=Math.min(pay,b+i);
     if(m>=n)p=b+i;
     b=b+i-p;if(b<0.5)b=0;
     A.pay[m]=p;A.int[m]=i;A.ins[m]=insm;A.bal[m]=b;
@@ -258,8 +255,7 @@ function calc(S0,gOv){
   S.oldBal=balFix;S.oldRate=S0.rateAfter;S.oldTerm=Math.max(0,S0.oldTerm-mF/12);
   var g=(gOv!=null?gOv:S.gHouse)/100,rE=S.rEtf/100,gI=S.incGrowth/100,gE=S.expGrowth/100,gR=S.rentGrowth/100;
   var incAvg=S.incAvg,incBase=S.incAvg;
-  var comm=S.sellComm/100;
-  var proceeds=S.oldValue-S.oldBal-S.oldValue*comm-S.sellLegal;
+  var proceeds=S.oldValue-S.oldBal-S.sellLegal;
   var need=S.price+S.reno;
   var srcA=proceeds+S.ownA,loanA=Math.max(0,need-srcA),extraA=Math.max(0,srcA-need);
   var etfA=Math.max(0,S.etf-S.ownA)+extraA;
@@ -274,12 +270,12 @@ function calc(S0,gOv){
   function taxFor(old,y){
     var f=fE(y),rentY=S.rent*S.occ*fR(y);
     if(S.taxMode==='flat')return 0.15*0.7*rentY;
-    var exp=sumY(old.int,y)+sumY(old.ins,y)+(S.svjOwner+S.misc)*12*f+S.repairs/100*rentY;
+    var exp=sumY(old.int,y)+sumY(old.ins,y)+(S.svjOwner+S.misc)*12*f+S.repairs*12*f;
     return 0.15*Math.max(0,rentY-exp);
   }
   /* první měsíc */
   var rentM=S.rent*S.occ/12,tax1=taxFor(oldB,0)/12;
-  var oldNet=rentM-oldB.pay[1]-oldB.ins[1]-S.svjOwner-S.repairs/100*rentM-S.misc-tax1;
+  var oldNet=rentM-oldB.pay[1]-oldB.ins[1]-S.svjOwner-S.repairs-S.misc-tax1;
   var A={loan:loanA,pay:schA.pay[1],ins:schA.ins[1],other:newOther,oldNet:0,rate:S.rateA};
   var B={loan:loanB,pay:schB.pay[1],ins:schB.ins[1],other:newOther,oldNet:oldNet,rate:S.rateB};
   A.housing=A.pay+A.ins+newOther;
@@ -293,7 +289,7 @@ function calc(S0,gOv){
   /* limity */
   var oldPayB=oldB.pay[1]+oldB.ins[1],oldPayC=oldC.pay[1]+oldC.ins[1];
   A.debt=loanA;B.debt=loanB+oldB.bal[0];C.debt=oldC.bal[0];
-  A.dsAvgPay=A.pay+A.ins;B.dsAvgPay=B.pay+B.ins+oldPayB-S.bankRent/100*S.rent;C.dsAvgPay=oldPayC;
+  A.dsAvgPay=A.pay+A.ins;B.dsAvgPay=B.pay+B.ins+oldPayB-S.bankRent;C.dsAvgPay=oldPayC;
   [A,B,C].forEach(function(x){
     x.dstiAvg=x.dsAvgPay/incAvg;x.dstiBase=x.dsAvgPay/incBase;
     x.dtiAvg=x.debt/(incAvg*12);x.dtiBase=x.debt/(incBase*12);
@@ -309,7 +305,7 @@ function calc(S0,gOv){
     function nw(m){
       var yrs=m/12,w=E;
       if(sch)w+=v0new*Math.pow(1+g,yrs)-sch.bal[m];
-      if(old)w+=v0old*(1-comm)*Math.pow(1+g,yrs)-old.bal[m];
+      if(old)w+=v0old*Math.pow(1+g,yrs)-S.sellLegal-old.bal[m];
       return w;
     }
     out.push(nw(0));
@@ -322,7 +318,7 @@ function calc(S0,gOv){
         if(taxCache[y]===undefined)taxCache[y]=taxFor(old,y)/12;
         var rm=rentM*fr;
         left-=sch.pay[m]+sch.ins[m]+newOther*f;
-        left+=rm-old.pay[m]-old.ins[m]-(S.svjOwner+S.misc)*f-S.repairs/100*rm-taxCache[y];
+        left+=rm-old.pay[m]-old.ins[m]-(S.svjOwner+S.misc)*f-S.repairs*f-taxCache[y];
       }else{left-=old.pay[m]+old.ins[m]+(S.oldSvjAll+S.oldEnergy+S.oldGarage)*f;}
       E=E*mg+left;
       if(m%12===0)out.push(nw(m));
@@ -333,7 +329,7 @@ function calc(S0,gOv){
   B.nw=run('B',schB,oldB,etfB,S.price,S.oldValue);
   C.nw=run('C',null,oldC,S.etf,0,S.oldValue);
   A.etf=etfA;B.etf=etfB;C.etf=S.etf;
-  var insNow=S0.oldBal*S0.oldIns/1200;
+  var insNow=S0.oldInsNow;
   var D={loan:0,pay:payNow,ins:insNow,other:S.oldSvjAll+S.oldEnergy+S.oldGarage,oldNet:0,exp:S.otherStay,debt:S0.oldBal,etf:S.etf};
   D.housing=D.pay+D.ins+D.other;D.leftAvg=incAvg-D.exp-D.housing;D.leftBase=D.leftAvg;
   return {D:D,payNow:payNow,balFix:balFix,A:A,B:B,C:C,incAvg:incAvg,incBase:incBase,proceeds:proceeds,need:need,extraA:extraA,rentM:rentM,tax1:tax1};
@@ -365,7 +361,7 @@ function buildInputs(){
   });
   inEl.innerHTML=h;
 }
-var MISSING=['incGrowth','expGrowth','rentGrowth', 'sellComm', 'sellLegal', 'oldEnergy', 'oldGarage', 'newEnergy', 'newIns', 'prepayOld', 'dRate', 'misc', 'bankRent', 'gHouse', 'rEtf'];
+var MISSING=['incGrowth','expGrowth','rentGrowth', 'sellLegal', 'oldEnergy', 'oldGarage', 'newEnergy', 'newIns', 'prepayOld', 'dRate', 'misc', 'bankRent', 'gHouse', 'rEtf'];
 function fmtField(id,d){return (S[id]===0&&MISSING.indexOf(id)>=0)?'':nf(d).format(S[id]);}
 function fillInputs(){
   GROUPS.forEach(function(g){g.f.forEach(function(f){
@@ -376,7 +372,7 @@ function fillInputs(){
 inEl.addEventListener('input',function(e){
   var el=e.target,id=el.id;if(!(id in S))return;
   S[id]=(id==='taxMode')?el.value:parse(el.value);
-  if(push(id,S[id])&&id==='rent'){var re=document.getElementById('repairs');if(re&&document.activeElement!==re)re.value=fmtField('repairs',1);}
+  push(id,S[id]);
   save();render();
 });
 inEl.addEventListener('change',function(e){
