@@ -43,7 +43,7 @@
   <aside class="stack inputs panel-inputs" id="inputs" aria-label="Vstupy"></aside>
   <main class="stack res one panel-results" id="results" aria-live="polite"></main>
 </div>
-<footer class="foot">Orientační model. Splátky jsou anuitní, sazby se po refixaci nové hypotéky nemění, pojištění je v Kč a platí, dokud úvěr trvá. Vlastní byt a jeho hodnota jsou ve všech variantách stejné, porovnává se jen, kolik zbude úspor po odečtení dluhů. Měsíční rozdíly ve výdajích se ukládají s výnosem volných peněz. Daňový odpočet úroků se nepočítá. Mimořádné splacení staré hypotéky během fixace banka může zpoplatnit (obvykle nad 20 až 25 % jistiny ročně), proto je poplatek zvlášť.</footer>
+<footer class="foot">Orientační model. Splátky jsou anuitní, sazby se po refixaci nové hypotéky nemění, pojištění se počítá úměrně zůstatku úvěru. Vlastní byt a jeho hodnota jsou ve všech variantách stejné, porovnává se jen, kolik zbude úspor po odečtení dluhů. Měsíční rozdíly ve výdajích se ukládají s výnosem volných peněz. Daňový odpočet úroků se nepočítá. Mimořádné splacení staré hypotéky během fixace banka může zpoplatnit (obvykle nad 20 až 25 % jistiny ročně), proto je poplatek zvlášť.</footer>
 </div>
 
 <script src="shared.js"></script>
@@ -52,7 +52,7 @@
 var BY=BYD,st=BY.st,kc=BY.kc,fmtIn=BY.fmtIn,parse=BY.parse,esc=BY.esc;
 var NB=' ';
 var LS='bydleni-uspory-v1';
-var DEF={X:2000000,term:30,rateSmall:4.79,insSmall:8800,rateBig:5.29,insBig:10000,fee:0,rFree:3,bud:0,HZ:15};
+var DEF={X:2000000,term:30,rateSmall:4.79,insSmall:8800,rateBig:5.29,insBig:10000,fee:0,rFree:3,bud:0,oldTermAfter:0,HZ:15};
 var L=Object.assign({},DEF);
 try{var o=JSON.parse(localStorage.getItem(LS));if(o)for(var k in DEF)if(typeof o[k]==='number')L[k]=o[k];}catch(e){}
 function saveL(){try{localStorage.setItem(LS,JSON.stringify(L));}catch(e){}}
@@ -62,12 +62,13 @@ var GROUPS=[
   ['l','X','Kolik z úspor chci použít','Kč',0],
   ['l','term','Splatnost nového úvěru','let',0],
   ['l','rateSmall','Sazba nového úvěru, když úspory vložím do nového bytu (menší úvěr)','% p. a.',2],
-  ['l','insSmall','Pojištění splácení při menším úvěru','Kč/měs',0],
+  ['l','insSmall','Pojištění splácení při menším úvěru (na začátku)','Kč/měs',0],
   ['l','rateBig','Sazba nového úvěru, když úspory použiju na starou hypotéku (větší úvěr)','% p. a.',2],
-  ['l','insBig','Pojištění splácení při větším úvěru','Kč/měs',0],
+  ['l','insBig','Pojištění splácení při větším úvěru (na začátku)','Kč/měs',0],
   ['l','fee','Poplatek za mimořádné splacení staré hypotéky hned (během fixace)','Kč',0],
   ['l','rFree','Výnos volných peněz ročně (spořicí účet, investice)','%',1],
-  ['l','bud','Kolik měsíčně vyčlenit na bydlení (0 = automaticky)','Kč/měs',0]
+  ['l','bud','Kolik měsíčně vyčlenit na bydlení (0 = automaticky)','Kč/měs',0],
+  ['l','oldTermAfter','Splatnost staré hypotéky po refinancování (0 = zbývající splatnost)','let',0]
  ]},
  {t:'Starý byt a jeho hypotéka',open:0,f:[
   ['b','oldBal','Zbývá doplatit starou hypotéku dnes','Kč',0],
@@ -108,7 +109,7 @@ function sim(opt,rbig,bud){
   if(opt==='S'){intoFlat=Math.min(X,need);newLoan=need-intoFlat;hold=X-intoFlat;}
   else if(opt==='O'){intoOld=Math.min(X,ob);ob-=intoOld;hold=(X-intoOld)-L.fee;newLoan=need;}
   else{parked=X;hold=X;newLoan=need;}
-  var ob0=ob;
+  var ob0=ob,remAfter=L.oldTermAfter>0?Math.round(L.oldTermAfter*12):oldN-mF,oldEnd=mF+remAfter;
   var nb=newLoan,nn=Math.round(Math.min(30,Math.max(1,L.term))*12),npay=pm(nb,nrate,nn),nr=nrate/1200;
   var or=orate/1200,opay=pm(ob,orate,oldN),opay1=opay,opay2=0,obFix=0,pp=0,obFix2=0;
   var rm=Math.pow(1+L.rFree/100,1/12);
@@ -118,16 +119,16 @@ function sim(opt,rbig,bud){
     if(m===mF+1){
       obFix=ob;
       if(opt==='F'){pp=Math.min(hold,ob);ob-=pp;hold-=pp;}
-      obFix2=ob;or=b.rateAfter/1200;opay=pm(ob,b.rateAfter,oldN-mF);opay2=opay;
+      obFix2=ob;or=b.rateAfter/1200;opay=pm(ob,b.rateAfter,remAfter);opay2=opay;
     }
     var op=0,np=0,it=0;
-    if(ob>0.5){var i=ob*or,p=Math.min(opay,ob+i);if(m>=oldN)p=ob+i;ob=ob+i-p;if(ob<0.5)ob=0;op=p+(m<=mF?b.oldIns:b.oldInsAfter);it+=i;}
-    if(nb>0.5){var i2=nb*nr,p2=Math.min(npay,nb+i2);if(m>=nn)p2=nb+i2;nb=nb+i2-p2;if(nb<0.5)nb=0;np=p2+nins;it+=i2;}
+    if(ob>0.5){var ob1=ob,i=ob*or,p=Math.min(opay,ob+i);if(m>=oldEnd)p=ob+i;ob=ob+i-p;if(ob<0.5)ob=0;op=p+(m<=mF?b.oldIns:b.oldInsAfter)*ob1/Math.max(1,b.oldBal);it+=i;}
+    if(nb>0.5){var nb1=nb,i2=nb*nr,p2=Math.min(npay,nb+i2);if(m>=nn)p2=nb+i2;nb=nb+i2-p2;if(nb<0.5)nb=0;np=p2+nins*nb1/Math.max(1,newLoan);it+=i2;}
     oout[m]=op;nout[m]=np;out[m]=op+np;intr[m]=it;
     hold=hold*rm+(bud||0)-(op+np);
     hd[m]=hold;dbt[m]=ob+nb;nw[m]=hold-ob-nb;
   }
-  return {out:out,oout:oout,nout:nout,intr:intr,nw:nw,hd:hd,dbt:dbt,newLoan:newLoan,nrate:nrate,nins:nins,npay:npay,nn:nn,opay1:opay1,opay2:opay2,ob0:ob0,obFix:obFix,pp:pp,obFix2:obFix2,oldN:oldN,mF:mF,fee:opt==='O'?L.fee:0,intoFlat:intoFlat,intoOld:intoOld,parked:parked,need:need};
+  return {out:out,oout:oout,nout:nout,intr:intr,nw:nw,hd:hd,dbt:dbt,newLoan:newLoan,nrate:nrate,nins:nins,npay:npay,nn:nn,opay1:opay1,opay2:opay2,ob0:ob0,obFix:obFix,pp:pp,obFix2:obFix2,oldN:oldN,remAfter:remAfter,mF:mF,fee:opt==='O'?L.fee:0,intoFlat:intoFlat,intoOld:intoOld,parked:parked,need:need};
 }
 function sumTo(a,m){var s=0;for(var i=1;i<=m;i++)s+=a[i];return s;}
 
@@ -247,8 +248,8 @@ function render(){
   /* 3 splátky */
   t='<table><thead><tr><th></th>'+KEYS.map(function(k){return '<th class="num">'+mk(k)+'</th>';}).join('')+'</tr></thead><tbody>';
   function newTip(r){return T('Splátka nového úvěru',[['Úvěr',kc(r.newLoan)],['Sazba',pc(r.nrate,2)],['Splatnost',L.term+' let'],['Splátka jistiny a úroku',kc(r.npay)],['+ pojištění',kc(r.nins)],['Celkem měsíčně',kc(r.npay+r.nins),'sum']]);}
-  function oldTip1(r){var p=r.opay1;return T('Splátka staré hypotéky do refixace',[['Zůstatek',kc(r.ob0)],['Sazba',pc(b.oldRate,2)],['Splatnost',yrs(r.oldN)],['Splátka jistiny a úroku',kc(p)],['+ pojištění',kc(b.oldIns)],['Celkem měsíčně',kc(p+b.oldIns),'sum']]);}
-  function oldTip2(r,k){var rows=[['Zůstatek po '+r.mF+' měsících',kc(r.obFix)]];if(k==='F')rows.push(['− splacení z úspor při refixaci',kc(-r.pp)]);rows.push(['Zůstatek po refixaci',kc(r.obFix2)],['Sazba po refixaci',pc(b.rateAfter,2)],['Zbývající splatnost',yrs(r.oldN-r.mF)],['Splátka jistiny a úroku',kc(r.opay2)],['+ pojištění',kc(b.oldInsAfter)],['Celkem měsíčně',kc(r.opay2+b.oldInsAfter),'sum']);return T('Splátka staré hypotéky po refixaci',rows);}
+  function oldTip1(r){var p=r.opay1;return T('Splátka staré hypotéky do refixace',[['Zůstatek',kc(r.ob0)],['Sazba',pc(b.oldRate,2)],['Splatnost',yrs(r.oldN)],['Splátka jistiny a úroku',kc(p)],['+ pojištění (úměrné zůstatku)',kc(b.oldIns*r.ob0/Math.max(1,b.oldBal))],['Celkem měsíčně',kc(p+b.oldIns*r.ob0/Math.max(1,b.oldBal)),'sum']]);}
+  function oldTip2(r,k){var rows=[['Zůstatek po '+r.mF+' měsících',kc(r.obFix)]];if(k==='F')rows.push(['− splacení z úspor při refixaci',kc(-r.pp)]);rows.push(['Zůstatek po refixaci',kc(r.obFix2)],['Sazba po refixaci',pc(b.rateAfter,2)],['Splatnost po refixaci',yrs(r.remAfter)],['Splátka jistiny a úroku',kc(r.opay2)],['+ pojištění (úměrné zůstatku)',kc(b.oldInsAfter*r.obFix2/Math.max(1,b.oldBal))],['Celkem měsíčně',kc(r.opay2+b.oldInsAfter*r.obFix2/Math.max(1,b.oldBal)),'sum']);return T('Splátka staré hypotéky po refixaci',rows);}
   sec('Do refixace (prvních '+mF+' měsíců)');
   tr('Splátka nového úvěru vč. pojištění',function(k,r){return newTip(r)+kc(r.nout[m1]);});
   tr('Splátka staré hypotéky vč. pojištění',function(k,r){return r.ob0>0?oldTip1(r)+kc(r.oout[m1]):'–';});
