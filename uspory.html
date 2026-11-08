@@ -222,7 +222,7 @@ function render(){
    '<tr class="strong"><th scope="row">Potřebuješ celkem</th><td class="num">'+T('Potřebuješ celkem',[['Cena',kc(pv.price)],['+ vybavení',kc(pv.reno)],['Celkem',kc(need),'sum']])+kc(need)+'</td></tr>'+
    '<tr class="sec"><td colspan="2">Úspory</td></tr>'+
    '<tr class="hl"><th scope="row">Kolik z úspor chceš použít</th><td class="num">'+kc(X)+'</td></tr></tbody></table>';
-  h+=step(1,'h1','Co máš na začátku','Tyto údaje se berou ze vstupů vlevo a ze základní kalkulačky. Nic dalšího se tu nepočítá.',t1);
+  h+=step(1,'h1','Co máš na začátku','Tyto údaje se berou ze vstupů vlevo a ze základní kalkulačky. Nic dalšího se tu nepočítá.',tw('Výchozí situace',t1));
 
   /* 2 co udělat s penězi */
   var t='<table><thead><tr><th></th>'+KEYS.map(function(k){return '<th class="num">'+mk(k)+'</th>';}).join('')+'</tr></thead><tbody>';
@@ -267,13 +267,14 @@ function render(){
   sec('Co se stane za '+L.HZ+' let');
   tr('Zaplatíš na splátkách celkem',function(k){return T('Zaplaceno na splátkách',[['Součet všech měsíčních splátek vč. pojištění za '+HM+' měsíců',kc(sumTo(R[k].out,HM))],['+ poplatek za předčasné splacení',kc(R[k].fee)],['Celkem',kc(paidH[k]),'sum']])+kc(paidH[k]);});
   tr('Z toho úroky',function(k){return kc(intH[k]);});
-  tr('Dluh, který ti ještě zbývá',function(k){return kc(debtH[k]);});
   sec('Peníze, které zbydou');
   tr('Měsíčně vyčleníš na bydlení (stejně ve všech)',function(){return kc(bud);});
   tr('Naspořené peníze na konci',function(k){return T('Naspořené peníze',[['Počáteční peníze na účtu',kc(R[k].parked+(k==='O'?-R[k].fee:0)+(k==='S'?X-R[k].intoFlat:0))],['+ každý měsíc: vyčleněno '+kc(bud)+' − splátky',''],['výnos '+pc(L.rFree,1)+' ročně',''],['Naspořeno po '+L.HZ+' letech',kc(holdH[k]),'sum']])+kc(holdH[k]);});
-  tr('Čisté jmění = naspořeno − zbývající dluh',function(k){return T('Čisté jmění',[['Naspořené peníze',kc(holdH[k])],['− zbývající dluh',kc(-debtH[k])],['Čisté jmění',kc(nwH[k]),'sum']])+'<b>'+kc(nwH[k])+'</b>';},'hl');
+  tr('Hodnota obou bytů (stejná ve všech možnostech)',function(){return kc(pv.price+b.oldValue);});
+  tr('Zbývající dluh',function(k){return kc(-debtH[k]);});
+  tr('Čisté jmění = naspořeno + byty − dluh',function(k){return T('Čisté jmění',[['Naspořené peníze',kc(holdH[k])],['+ hodnota nového a starého bytu',kc(pv.price+b.oldValue)],['− zbývající dluh',kc(-debtH[k])],['Čisté jmění',kc(nwH[k]+pv.price+b.oldValue),'sum']])+'<b>'+kc(nwH[k]+pv.price+b.oldValue)+'</b>';},'hl');
   t+='</tbody></table>';
-  h+=step(4,'h4','Co z toho zbude za '+L.HZ+' let','Každý měsíc dáváš stranou rozdíl mezi vyčleněnou částkou na bydlení ('+kc(bud)+', stejná u všech možností) a splátkami. Nižší splátka znamená víc naspořeno, vyšší míň. Naspořené peníze vydělávají '+pc(L.rFree,1)+' ročně. Na konci se odečte dluh, který ještě splácíš.',tw('Výsledek za '+L.HZ+' let',t));
+  h+=step(4,'h4','Co z toho zbude za '+L.HZ+' let','Každý měsíc dáváš stranou rozdíl mezi vyčleněnou částkou na bydlení ('+kc(bud)+', stejná u všech možností) a splátkami. Nižší splátka znamená víc naspořeno, vyšší míň. Naspořené peníze vydělávají '+pc(L.rFree,1)+' ročně. Na konci se k nim přičte hodnota obou bytů (stejná u všech možností) a odečte dluh, který ještě splácíš.',tw('Výsledek za '+L.HZ+' let',t));
 
   /* 5 vyhodnocení */
   var bestNW=Math.max(nwH.S,nwH.O,nwH.F),best=KEYS.filter(function(k){return nwH[k]===bestNW;})[0];
@@ -282,7 +283,7 @@ function render(){
   var mxo=Math.max(worst,1);
   var hr=KEYS.map(function(k){return '<div class="hrow '+VC[k]+'"><span class="nm"><span class="mk" aria-hidden="true"></span>'+NAMES[k]+'</span><div class="track" aria-hidden="true"><div class="fill" style="left:0;width:'+(over[k]/mxo*100).toFixed(1)+'%"></div></div><span class="hv num'+(over[k]>0?' neg':'')+'">'+(over[k]>0?'−'+kc(over[k]):'nejlepší')+'</span></div>';}).join('');
   var ch=chart(R,L.HZ);
-  var li='<li>Vychází nejlépe <b>'+NAMES[best].toLowerCase()+'</b>, protože po '+L.HZ+' letech má nejvyšší čisté jmění ('+kc(bestNW)+').</li>'+
+  var li='<li>Vychází nejlépe <b>'+NAMES[best].toLowerCase()+'</b>, protože po '+L.HZ+' letech má nejvyšší čisté jmění ('+kc(bestNW+pv.price+b.oldValue)+').</li>'+
    '<li>Ostatní možnosti mají čisté jmění nižší, tedy v praxi zaplatí navíc: '+KEYS.filter(function(k){return k!==best;}).map(function(k){return NAMES[k].toLowerCase()+' o <b>'+kc(over[k])+'</b>';}).join(', ')+'.</li>'+
    '<li>Hlavní důvod: stará hypotéka má do refixace jen '+pc(b.oldRate,2)+' a po ní '+pc(b.rateAfter,2)+', nový úvěr '+pc(L.rateSmall,2)+' (menší) nebo '+pc(L.rateBig,2)+' (větší). Úspory se vyplatí dát tam, kde ušetří nejvíc úroku.'+(L.rateBig>L.rateSmall?' Vyšší sazba většího úvěru se platí z celých '+kc(R.O.newLoan)+', ne jen z částky, kterou jsi nepoužil.':'')+'</li>';
   h+=step(5,'h5','Vyhodnocení: co se vyplatí víc','Porovnává se čisté jmění z kroku 4. Kdo má víc, vyhrává. Rozdíl je to, o kolik zaplatíš navíc oproti nejlepší možnosti.',
