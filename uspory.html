@@ -52,7 +52,7 @@
 var BY=BYD,st=BY.st,kc=BY.kc,fmtIn=BY.fmtIn,parse=BY.parse,esc=BY.esc;
 var NB=' ';
 var LS='bydleni-uspory-v1';
-var DEF={X:2000000,term:30,rateSmall:4.79,insSmall:8800,rateBig:5.29,insBig:10000,fee:0,rFree:3,bud:0,oldTermAfter:0,HZ:15};
+var DEF={X:2000000,term:30,rateSmall:4.79,insSmall:8800,rateBig:5.29,insBig:10000,rFree:3,bud:0,oldTermAfter:0,HZ:15};
 var L=Object.assign({},DEF);
 try{var o=JSON.parse(localStorage.getItem(LS));if(o)for(var k in DEF)if(typeof o[k]==='number')L[k]=o[k];}catch(e){}
 function saveL(){try{localStorage.setItem(LS,JSON.stringify(L));}catch(e){}}
@@ -63,9 +63,8 @@ var GROUPS=[
   ['l','term','Splatnost nového úvěru','let',0],
   ['l','rateSmall','Sazba nového úvěru, když úspory vložím do nového bytu (menší úvěr)','% p. a.',2],
   ['l','insSmall','Pojištění splácení při menším úvěru (na začátku)','Kč/měs',0],
-  ['l','rateBig','Sazba nového úvěru, když úspory použiju na starou hypotéku (větší úvěr)','% p. a.',2],
+  ['l','rateBig','Sazba nového úvěru, když úspory nedám do bytu, ale splatím jimi starou hypotéku při refixaci (větší úvěr)','% p. a.',2],
   ['l','insBig','Pojištění splácení při větším úvěru (na začátku)','Kč/měs',0],
-  ['l','fee','Poplatek za mimořádné splacení staré hypotéky hned (během fixace)','Kč',0],
   ['l','rFree','Výnos volných peněz ročně (spořicí účet, investice)','%',1],
   ['l','bud','Kolik měsíčně vyčlenit na bydlení (0 = automaticky)','Kč/měs',0],
   ['l','oldTermAfter','Splatnost staré hypotéky po refinancování (0 = zbývající splatnost)','let',0]
@@ -84,10 +83,10 @@ var GROUPS=[
   ['p','reno','Vybavení a náklady po koupi','Kč',0]
  ]}
 ];
-var NAMES={S:'Úspory do nového bytu',O:'Splatit starou hypotéku hned',F:'Splatit starou při refixaci'};
-var VC={S:'v2',O:'v3',F:'v1'};
-var DESC={S:'Menší nový úvěr, stará hypotéka zůstane.',O:'Stará hypotéka se sníží hned, nový úvěr je větší.',F:'Úspory čekají na účtu a po konci fixace splatí starou hypotéku.'};
-var KEYS=['S','F','O'];
+var NAMES={S:'Úspory do nového bytu',F:'Splatit starou při refixaci'};
+var VC={S:'v2',F:'v1'};
+var DESC={S:'Menší nový úvěr, stará hypotéka zůstane.',F:'Úspory čekají na účtu a po konci fixace splatí starou hypotéku.'};
+var KEYS=['S','F'];
 
 var res=document.getElementById('results'),inEl=document.getElementById('inputs'),chipsEl=document.getElementById('chips');
 function store(s){return s==='l'?L:s==='b'?st.base:BY.cur().v;}
@@ -107,7 +106,6 @@ function sim(opt,rbig,bud){
   var small=(opt==='S');
   nrate=small?L.rateSmall:(rbig!=null?rbig:L.rateBig);nins=small?L.insSmall:L.insBig;
   if(opt==='S'){intoFlat=Math.min(X,need);newLoan=need-intoFlat;hold=X-intoFlat;}
-  else if(opt==='O'){intoOld=Math.min(X,ob);ob-=intoOld;hold=(X-intoOld)-L.fee;newLoan=need;}
   else{parked=X;hold=X;newLoan=need;}
   var ob0=ob,remAfter=L.oldTermAfter>0?Math.round(L.oldTermAfter*12):oldN-mF,oldEnd=mF+remAfter;
   var nb=newLoan,nn=Math.round(Math.min(30,Math.max(1,L.term))*12),npay=pm(nb,nrate,nn),nr=nrate/1200;
@@ -128,7 +126,7 @@ function sim(opt,rbig,bud){
     hold=hold*rm+(bud||0)-(op+np);
     hd[m]=hold;dbt[m]=ob+nb;nw[m]=hold-ob-nb;
   }
-  return {out:out,oout:oout,nout:nout,intr:intr,nw:nw,hd:hd,dbt:dbt,newLoan:newLoan,nrate:nrate,nins:nins,npay:npay,nn:nn,opay1:opay1,opay2:opay2,ob0:ob0,obFix:obFix,pp:pp,obFix2:obFix2,oldN:oldN,remAfter:remAfter,mF:mF,fee:opt==='O'?L.fee:0,intoFlat:intoFlat,intoOld:intoOld,parked:parked,need:need};
+  return {out:out,oout:oout,nout:nout,intr:intr,nw:nw,hd:hd,dbt:dbt,newLoan:newLoan,nrate:nrate,nins:nins,npay:npay,nn:nn,opay1:opay1,opay2:opay2,ob0:ob0,obFix:obFix,pp:pp,obFix2:obFix2,oldN:oldN,remAfter:remAfter,mF:mF,fee:0,intoFlat:intoFlat,intoOld:intoOld,parked:parked,need:need};
 }
 function sumTo(a,m){var s=0;for(var i=1;i<=m;i++)s+=a[i];return s;}
 
@@ -157,7 +155,7 @@ res.addEventListener('click',function(e){var t=e.target.closest('[data-hz]');if(
 
 function niceStep(x){if(x<=0)return 1;var p=Math.pow(10,Math.floor(Math.log10(x))),m=x/p;return (m<=1?1:m<=2?2:m<=5?5:10)*p;}
 function chart(R,years){
-  var W=640,H=300,Lm=62,Rr=12,T=10,Bm=28,ks=['F','O'];
+  var W=640,H=300,Lm=62,Rr=12,T=10,Bm=28,ks=['F'];
   var all=[0];ks.forEach(function(k){for(var y=0;y<=years;y++)all.push(R[k].nw[y*12]-R.S.nw[y*12]);});
   var mn=Math.min.apply(null,all),mx=Math.max.apply(null,all);
   if(mx-mn<1){mx=mn+1;}
@@ -166,7 +164,7 @@ function chart(R,years){
   var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Rozdíl v majetku oproti variantě úspory do nového bytu" id="chart">';
   for(var v=y0;v<=y1+step/1e6;v+=step){s+='<line x1="'+Lm+'" x2="'+(W-Rr)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--line)" stroke-width="'+(Math.abs(v)<step/1e3?1.6:0.7)+'"/><text x="'+(Lm-6)+'" y="'+(Y(v)+3)+'" text-anchor="end">'+new Intl.NumberFormat('cs-CZ',{maximumFractionDigits:0}).format(v/1000)+'</text>';}
   for(var yr=0;yr<=years;yr+=(years<=10?2:5))s+='<text x="'+X(yr)+'" y="'+(H-8)+'" text-anchor="middle">'+yr+'</text>';
-  var col={O:'var(--v3)',F:'var(--v1)'};
+  var col={F:'var(--v1)'};
   ks.forEach(function(k){
     var d='';for(var y=0;y<=years;y++)d+=(y?'L':'M')+X(y).toFixed(1)+' '+Y(R[k].nw[y*12]-R.S.nw[y*12]).toFixed(1);
     s+='<path d="'+d+'" fill="none" stroke="'+col[k]+'" stroke-width="2.6" stroke-linejoin="round"'+(k==='F'?' stroke-dasharray="7 5"':'')+'/>';
@@ -182,7 +180,7 @@ function bindChart(R,ch){
     var r=svg.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*ch.W,i=Math.round((px-ch.L)/(ch.W-ch.L-ch.Rr)*ch.years);
     if(i<0||i>ch.years){hide();return;}
     var x=ch.L+(ch.W-ch.L-ch.Rr)*i/ch.years;cur.setAttribute('x1',x);cur.setAttribute('x2',x);cur.style.display='';
-    tip.innerHTML='<b>Za '+i+' let</b><br>Splatit starou hned: '+sd(R.O.nw[i*12]-R.S.nw[i*12])+'<br>Splatit při refixaci: '+sd(R.F.nw[i*12]-R.S.nw[i*12]);
+    tip.innerHTML='<b>Za '+i+' let</b><br>Splatit starou při refixaci: '+sd(R.F.nw[i*12]-R.S.nw[i*12]);
     tip.style.display='block';var box=svg.parentNode.getBoundingClientRect(),left=e.clientX-box.left+12;
     if(left+tip.offsetWidth>box.width-4)left=e.clientX-box.left-tip.offsetWidth-12;
     tip.style.left=Math.max(4,left)+'px';tip.style.top=(e.clientY-box.top+8)+'px';
@@ -198,16 +196,16 @@ var TIPS=[];
 function T(title,rows){TIPS.push({t:title,r:rows});return '<span class="why" tabindex="0" role="button" aria-label="Ukázat výpočet" data-t="'+(TIPS.length-1)+'">i</span>';}
 function yrs(m){return fmtIn(Math.round(m/12*10)/10,1)+' let';}
 function step(n,id,title,intro,body){return '<section class="panel" aria-labelledby="'+id+'"><div class="ph"><div><h2 id="'+id+'"><span class="stepn">'+n+'</span>'+title+'</h2><p class="hint">'+intro+'</p></div></div>'+body+'</section>';}
-function simAll(bud){return {S:sim('S',null,bud),O:sim('O',null,bud),F:sim('F',null,bud)};}
+function simAll(bud){return {S:sim('S',null,bud),F:sim('F',null,bud)};}
 
 function sens(bud,HM){
   var b=st.base,orig=b.rateAfter,pts=[];
-  for(var r=3;r<=8.0001;r+=0.25){b.rateAfter=r;var S=sim('S',null,bud).nw[HM];pts.push({r:r,O:sim('O',null,bud).nw[HM]-S,F:sim('F',null,bud).nw[HM]-S});}
+  for(var r=3;r<=8.0001;r+=0.25){b.rateAfter=r;var S=sim('S',null,bud).nw[HM];pts.push({r:r,F:sim('F',null,bud).nw[HM]-S});}
   b.rateAfter=orig;return pts;
 }
 function sensChart(pts,cur){
   var W=640,H=300,Lm=62,Rr=12,T=10,Bm=34;
-  var all=[0];pts.forEach(function(p){all.push(p.O,p.F);});
+  var all=[0];pts.forEach(function(p){all.push(p.F);});
   var mn=Math.min.apply(null,all),mx=Math.max.apply(null,all),step=niceStep((mx-mn)/5),y0=Math.floor(mn/step)*step,y1=Math.ceil(mx/step)*step;
   var r0=pts[0].r,r1=pts[pts.length-1].r;
   var X=function(r){return Lm+(W-Lm-Rr)*(r-r0)/(r1-r0);},Y=function(v){return T+(H-T-Bm)*(1-(v-y0)/(y1-y0));};
@@ -215,8 +213,8 @@ function sensChart(pts,cur){
   for(var v=y0;v<=y1+step/1e6;v+=step)s+='<line x1="'+Lm+'" x2="'+(W-Rr)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--line)" stroke-width="'+(Math.abs(v)<step/1e3?1.6:0.7)+'"/><text x="'+(Lm-6)+'" y="'+(Y(v)+3)+'" text-anchor="end">'+new Intl.NumberFormat('cs-CZ',{maximumFractionDigits:0}).format(v/1000)+'</text>';
   for(var r=Math.ceil(r0);r<=r1;r++)s+='<text x="'+X(r)+'" y="'+(H-16)+'" text-anchor="middle">'+r+' %</text>';
   s+='<text x="'+((Lm+W-Rr)/2)+'" y="'+(H-2)+'" text-anchor="middle">sazba staré hypotéky po refixaci</text>';
-  var col={O:'var(--v3)',F:'var(--v1)'};
-  ['F','O'].forEach(function(k){var d='';pts.forEach(function(p,i){d+=(i?'L':'M')+X(p.r).toFixed(1)+' '+Y(p[k]).toFixed(1);});
+  var col={F:'var(--v1)'};
+  ['F'].forEach(function(k){var d='';pts.forEach(function(p,i){d+=(i?'L':'M')+X(p.r).toFixed(1)+' '+Y(p[k]).toFixed(1);});
     s+='<path d="'+d+'" fill="none" stroke="'+col[k]+'" stroke-width="2.6" stroke-linejoin="round"'+(k==='F'?' stroke-dasharray="7 5"':'')+'/>';});
   if(cur>=r0&&cur<=r1)s+='<line x1="'+X(cur)+'" x2="'+X(cur)+'" y1="'+T+'" y2="'+(H-Bm)+'" stroke="var(--mut)" stroke-width="1.2" stroke-dasharray="3 3"/><text x="'+X(cur)+'" y="'+(T+10)+'" text-anchor="'+(cur>(r0+r1)/2?'end':'start')+'" dx="'+(cur>(r0+r1)/2?-4:4)+'">tvůj odhad '+pc(cur,2)+'</text>';
   s+='<line id="scur" x1="0" x2="0" y1="'+T+'" y2="'+(H-Bm)+'" stroke="var(--mut)" stroke-width="1" style="display:none"/></svg>';
@@ -230,7 +228,7 @@ function bindSens(pts,ch){
     if(f<0||f>1){hide();return;}
     var i=Math.round(f*(pts.length-1)),p=pts[i],x=ch.L+(ch.W-ch.L-ch.Rr)*i/(pts.length-1);
     cur.setAttribute('x1',x);cur.setAttribute('x2',x);cur.style.display='';
-    tip.innerHTML='<b>Stará hypo po refixaci: '+pc(p.r,2)+'</b><br>Splatit starou hned: '+sd(p.O)+'<br>Splatit při refixaci: '+sd(p.F);
+    tip.innerHTML='<b>Stará hypo po refixaci: '+pc(p.r,2)+'</b><br>Splatit starou při refixaci: '+sd(p.F);
     tip.style.display='block';var box=svg.parentNode.getBoundingClientRect(),left=e.clientX-box.left+12;
     if(left+tip.offsetWidth>box.width-4)left=e.clientX-box.left-tip.offsetWidth-12;
     tip.style.left=Math.max(4,left)+'px';tip.style.top=(e.clientY-box.top+8)+'px';
@@ -270,18 +268,16 @@ function render(){
   function dash(v){return v?kc(v):'–';}
   sec('Kam jdou úspory '+kc(X));
   tr('Do koupě nového bytu',function(k,r){return dash(r.intoFlat);});
-  tr('Na splacení staré hypotéky hned',function(k,r){return dash(r.intoOld);});
   tr('Zůstanou na účtu do refixace',function(k,r){return dash(r.parked);});
   sec('Výsledné dluhy po tomto kroku');
   tr('Nový úvěr',function(k,r){return T('Nový úvěr',[['Potřebuješ celkem',kc(need)],['− úspory vložené do koupě',kc(-r.intoFlat)],['Nový úvěr',kc(r.newLoan),'sum']])+kc(r.newLoan);},'strong');
-  tr('Stará hypotéka',function(k,r){return T('Stará hypotéka po kroku',[['Zůstatek dnes',kc(b.oldBal)],['− úspory na splacení hned',kc(-r.intoOld)],['Stará hypotéka',kc(r.ob0),'sum']])+kc(r.ob0);},'strong');
+  tr('Stará hypotéka',function(k,r){return T('Stará hypotéka po kroku',[['Zůstatek dnes',kc(b.oldBal)],['Stará hypotéka',kc(r.ob0),'sum']])+kc(r.ob0);},'strong');
   tr('Dluh celkem',function(k,r){return kc(r.newLoan+r.ob0);});
   sec('Podmínky nového úvěru (jsou vstupy vlevo)');
   tr('Sazba',function(k,r){return pc(r.nrate,2);});
   tr('Pojištění splácení',function(k,r){return kc(r.nins)+'/měs';});
-  tr('Poplatek za předčasné splacení',function(k,r){return r.fee?kc(r.fee):'–';});
   t+='</tbody></table>';
-  h+=step(2,'h2','Co uděláš s úsporami','Tři možnosti. Dluh celkem je ve všech stejný, liší se jeho rozdělení na starý a nový úvěr. Větší nový úvěr má vyšší sazbu.',tw('Tři možnosti',t));
+  h+=step(2,'h2','Co uděláš s úsporami','Dvě možnosti. Dluh celkem je v obou stejný, liší se jeho rozdělení na starý a nový úvěr. Větší nový úvěr může mít jinou sazbu.',tw('Dvě možnosti',t));
 
   /* 3 splátky */
   t='<table><thead><tr><th></th>'+KEYS.map(function(k){return '<th class="num">'+mk(k)+'</th>';}).join('')+'</tr></thead><tbody>';
@@ -304,11 +300,11 @@ function render(){
   KEYS.forEach(function(k){var r=R[k];nwH[k]=r.nw[HM];debtH[k]=r.dbt[HM];holdH[k]=r.hd[HM];paidH[k]=sumTo(r.out,HM)+r.fee;intH[k]=sumTo(r.intr,HM);});
   t='<table><thead><tr><th></th>'+KEYS.map(function(k){return '<th class="num">'+mk(k)+'</th>';}).join('')+'</tr></thead><tbody>';
   sec('Co se stane za '+L.HZ+' let');
-  tr('Zaplatíš na splátkách celkem',function(k){return T('Zaplaceno na splátkách',[['Součet všech měsíčních splátek vč. pojištění za '+HM+' měsíců',kc(sumTo(R[k].out,HM))],['+ poplatek za předčasné splacení',kc(R[k].fee)],['Celkem',kc(paidH[k]),'sum']])+kc(paidH[k]);});
+  tr('Zaplatíš na splátkách celkem',function(k){return T('Zaplaceno na splátkách',[['Součet všech měsíčních splátek vč. pojištění za '+HM+' měsíců',kc(sumTo(R[k].out,HM))],['Celkem',kc(paidH[k]),'sum']])+kc(paidH[k]);});
   tr('Z toho úroky',function(k){return kc(intH[k]);});
   sec('Peníze, které zbydou');
   tr('Měsíčně vyčleníš na bydlení (stejně ve všech)',function(){return kc(bud);});
-  tr('Naspořené peníze na konci',function(k){return T('Naspořené peníze',[['Počáteční peníze na účtu',kc(R[k].parked+(k==='O'?-R[k].fee:0)+(k==='S'?X-R[k].intoFlat:0))],['+ každý měsíc: vyčleněno '+kc(bud)+' − splátky',''],['výnos '+pc(L.rFree,1)+' ročně',''],['Naspořeno po '+L.HZ+' letech',kc(holdH[k]),'sum']])+kc(holdH[k]);});
+  tr('Naspořené peníze na konci',function(k){return T('Naspořené peníze',[['Počáteční peníze na účtu',kc(R[k].parked+(k==='S'?X-R[k].intoFlat:0))],['+ každý měsíc: vyčleněno '+kc(bud)+' − splátky',''],['výnos '+pc(L.rFree,1)+' ročně',''],['Naspořeno po '+L.HZ+' letech',kc(holdH[k]),'sum']])+kc(holdH[k]);});
   tr('Hodnota obou bytů (stejná ve všech možnostech)',function(){return kc(pv.price+b.oldValue);});
   tr('Zbývající dluh',function(k){return kc(-debtH[k]);});
   tr('Čisté jmění = naspořeno + byty − dluh',function(k){return T('Čisté jmění',[['Naspořené peníze',kc(holdH[k])],['+ hodnota nového a starého bytu',kc(pv.price+b.oldValue)],['− zbývající dluh',kc(-debtH[k])],['Čisté jmění',kc(nwH[k]+pv.price+b.oldValue),'sum']])+'<b>'+kc(nwH[k]+pv.price+b.oldValue)+'</b>';},'hl');
@@ -316,18 +312,18 @@ function render(){
   h+=step(4,'h4','Co z toho zbude za '+L.HZ+' let','Každý měsíc dáváš stranou rozdíl mezi vyčleněnou částkou na bydlení ('+kc(bud)+', stejná u všech možností) a splátkami. Nižší splátka znamená víc naspořeno, vyšší míň. Naspořené peníze vydělávají '+pc(L.rFree,1)+' ročně. Na konci se k nim přičte hodnota obou bytů (stejná u všech možností) a odečte dluh, který ještě splácíš.',tw('Výsledek za '+L.HZ+' let',t));
 
   /* 5 vyhodnocení */
-  var bestNW=Math.max(nwH.S,nwH.O,nwH.F),best=KEYS.filter(function(k){return nwH[k]===bestNW;})[0];
+  var bestNW=Math.max(nwH.S,nwH.F),best=KEYS.filter(function(k){return nwH[k]===bestNW;})[0];
   var over={};KEYS.forEach(function(k){over[k]=bestNW-nwH[k];});
-  var worst=Math.max(over.S,over.O,over.F);
+  var worst=Math.max(over.S,over.F);
   var mxo=Math.max(worst,1);
   var hr=KEYS.map(function(k){return '<div class="hrow '+VC[k]+'"><span class="nm"><span class="mk" aria-hidden="true"></span>'+NAMES[k]+'</span><div class="track" aria-hidden="true"><div class="fill" style="left:0;width:'+(over[k]/mxo*100).toFixed(1)+'%"></div></div><span class="hv num'+(over[k]>0?' neg':'')+'">'+(over[k]>0?'−'+kc(over[k]):'nejlepší')+'</span></div>';}).join('');
   var ch=chart(R,L.HZ);
   var li='<li>Vychází nejlépe <b>'+NAMES[best].toLowerCase()+'</b>, protože po '+L.HZ+' letech má nejvyšší čisté jmění ('+kc(bestNW+pv.price+b.oldValue)+').</li>'+
    '<li>Ostatní možnosti mají čisté jmění nižší, tedy v praxi zaplatí navíc: '+KEYS.filter(function(k){return k!==best;}).map(function(k){return NAMES[k].toLowerCase()+' o <b>'+kc(over[k])+'</b>';}).join(', ')+'.</li>'+
-   '<li>Hlavní důvod: stará hypotéka má do refixace jen '+pc(b.oldRate,2)+' a po ní '+pc(b.rateAfter,2)+', nový úvěr '+pc(L.rateSmall,2)+' (menší) nebo '+pc(L.rateBig,2)+' (větší). Úspory se vyplatí dát tam, kde ušetří nejvíc úroku.'+(L.rateBig>L.rateSmall?' Vyšší sazba většího úvěru se platí z celých '+kc(R.O.newLoan)+', ne jen z částky, kterou jsi nepoužil.':'')+'</li>';
+   '<li>Hlavní důvod: stará hypotéka má do refixace jen '+pc(b.oldRate,2)+' a po ní '+pc(b.rateAfter,2)+', nový úvěr '+pc(L.rateSmall,2)+' (menší) nebo '+pc(L.rateBig,2)+' (větší). Úspory se vyplatí dát tam, kde ušetří nejvíc úroku.'+(L.rateBig>L.rateSmall?' Vyšší sazba většího úvěru se platí z celých '+kc(R.F.newLoan)+', ne jen z částky, kterou jsi nepoužil.':'')+'</li>';
   h+=step(5,'h5','Vyhodnocení: co se vyplatí víc','Porovnává se čisté jmění z kroku 4. Kdo má víc, vyhrává. Rozdíl je to, o kolik zaplatíš navíc oproti nejlepší možnosti.',
     hr+'<div class="verdict sec-gap"><h3>Jak se k tomu došlo</h3><ul>'+li+'</ul></div>'+
-    '<div class="chartbox sec-gap"><div class="subh"><h3>Jak se rozdíl vyvíjí v čase</h3></div><p class="note" style="margin:0 0 8px">Rozdíl čistého jmění oproti variantě „úspory do nového bytu“, v tisících Kč. Nad nulou je to výhodnější.</p><div class="hz" role="group" aria-label="Horizont">'+[5,10,15,20,30].map(function(y){return '<button type="button" data-hz="'+y+'" aria-pressed="'+(y===L.HZ)+'">'+y+' let</button>';}).join('')+'</div><div class="legend"><span class="v1"><span class="mk" aria-hidden="true"></span>'+NAMES.F+'</span><span class="v3"><span class="mk" aria-hidden="true"></span>'+NAMES.O+'</span></div>'+ch.svg+'<div class="ctip" id="ctip"></div></div>');
+    '<div class="chartbox sec-gap"><div class="subh"><h3>Jak se rozdíl vyvíjí v čase</h3></div><p class="note" style="margin:0 0 8px">Rozdíl čistého jmění oproti variantě „úspory do nového bytu“, v tisících Kč. Nad nulou je to výhodnější.</p><div class="hz" role="group" aria-label="Horizont">'+[5,10,15,20,30].map(function(y){return '<button type="button" data-hz="'+y+'" aria-pressed="'+(y===L.HZ)+'">'+y+' let</button>';}).join('')+'</div><div class="legend"><span class="v1"><span class="mk" aria-hidden="true"></span>'+NAMES.F+'</span></div>'+ch.svg+'<div class="ctip" id="ctip"></div></div>');
 
   /* 6 hranice sazby */
   function be(opt){
@@ -336,17 +332,16 @@ function render(){
     var lo=0,hi=15;for(var i=0;i<30;i++){var mid=(lo+hi)/2;if(f(mid)>0)lo=mid;else hi=mid;}
     return (lo+hi)/2;
   }
-  var beO=be('O'),beF=be('F');
+  var beF=be('F');
   function beTxt(v){return v===null?'ani při sazbě 0 %':v>=15?'při jakékoli sazbě':'jen když sazba většího úvěru bude nejvýš <b>'+pc(v,2)+'</b>';}
   h+=step(6,'h6','Od jaké sazby se přeplácení nevyplatí','Zkusil jsem sazbu většího úvěru snižovat, dokud se výsledek nevyrovná variantě „úspory do nového bytu“.',
-   '<div class="verdict"><ul><li><b>Splatit starou hypotéku hned</b> se vyplatí '+beTxt(beO)+' (menší úvěr: '+pc(L.rateSmall,2)+', teď počítáš s '+pc(L.rateBig,2)+').</li>'+
-   '<li><b>Splatit starou při refixaci</b> se vyplatí '+beTxt(beF)+'.</li></ul></div><p class="note">Stará hypotéka má do refixace jen '+pc(b.oldRate,2)+', takže se vyplatí nechat ji běžet. '+(beO!==null&&beO<L.rateSmall?'Splácet starou hypotéku se proto nevyplatí ani při stejné sazbě obou úvěrů. ':'')+'Zjisti u banky přesnou sazbu pro obě výše úvěru.</p>');
+   '<div class="verdict"><ul><li><b>Splatit starou při refixaci</b> se vyplatí '+beTxt(beF)+' (menší úvěr: '+pc(L.rateSmall,2)+', teď počítáš s '+pc(L.rateBig,2)+').</li></ul></div><p class="note">Stará hypotéka má do refixace jen '+pc(b.oldRate,2)+', takže se vyplatí nechat ji běžet. Zjisti u banky přesnou sazbu pro obě výše úvěru.</p>');
 
   /* 7 citlivost na sazbu staré hypotéky */
   var sp=sens(bud,HM),sch=sensChart(sp,b.rateAfter);
   var zero=null;for(var i=0;i<sp.length;i++){if(sp[i].F>0){zero=sp[i].r;break;}}
-  h+=step(7,'h7','Kdy se vyplatí splatit starou hypotéku','Graf ukazuje, jak by dopadly obě možnosti splacení staré hypotéky podle toho, na jaké sazbě ji po refixaci banka nechá. Nula je varianta „úspory do nového bytu“. Co je nad nulou, je lepší, co pod, je horší.',
-   '<div class="chartbox"><div class="legend"><span class="v1"><span class="mk" aria-hidden="true"></span>'+NAMES.F+'</span><span class="v3"><span class="mk" aria-hidden="true"></span>'+NAMES.O+'</span></div><p class="note" style="margin:0 0 8px">Rozdíl čistého jmění za '+L.HZ+' let, v tisících Kč.</p>'+sch.svg+'<div class="ctip" id="sctip"></div></div>'+
+  h+=step(7,'h7','Kdy se vyplatí splatit starou hypotéku','Graf ukazuje, jak by dopadlo splacení staré hypotéky při refixaci podle toho, na jaké sazbě ji po refixaci banka nechá. Nula je varianta „úspory do nového bytu“. Co je nad nulou, je lepší, co pod, je horší.',
+   '<div class="chartbox"><div class="legend"><span class="v1"><span class="mk" aria-hidden="true"></span>'+NAMES.F+'</span></div><p class="note" style="margin:0 0 8px">Rozdíl čistého jmění za '+L.HZ+' let, v tisících Kč.</p>'+sch.svg+'<div class="ctip" id="sctip"></div></div>'+
    '<div class="verdict"><ul><li>'+(zero===null?'V rozsahu 3 až 8 % se splácení staré hypotéky nevyplatí.':'Splatit starou při refixaci se začne vyplácet zhruba od sazby <b>'+pc(zero,2)+'</b>. Tvůj odhad je '+pc(b.rateAfter,2)+', takže '+(b.rateAfter>=zero?'<b>se vyplatí</b>.':'<b>se nevyplatí</b>.')+'</li>')+'</ul></div>');
 
   res.innerHTML=h;
