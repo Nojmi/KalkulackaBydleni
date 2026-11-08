@@ -264,6 +264,21 @@ function render(){
   ex+='</tbody></table>';
   h+=panel('h0','Příklad v kostce','Obě cesty vedle sebe. Čísla jsou ze vstupů vlevo. Tlačítkem vložíte reálná čísla z nabídek Moneta (nový úvěr 14 mil. Kč 5,49 %, 16 mil. Kč 4,99 %, refinancování staré 4,99 %). Rozdíl ukazuje, o kolik je cesta B lepší (+) nebo horší (−) než A.',tw('Dvě cesty vedle sebe',ex)+'<p class="note">Cesta B má při schvalování o '+kc(rf.newLoan-rs.newLoan)+' vyšší dluh. Ověřte u banky, že ho schválí. <button class="ghost sm" type="button" id="loadEx">Vložit čísla z Moneta</button></p>');
 
+  /* 0b stará hypotéka ve třech stavech */
+  var oS=R.S,rem3=oS.remAfter,ob3=Math.max(0,oS.obFix2-X);
+  function insA(bal){return b.oldInsAfter*bal/Math.max(1,b.oldBal);}
+  var st3=[
+    {k:'v0',n:'Dnes (do refinancování)',bal:oS.ob0,rate:b.oldRate,term:oS.oldN,pay:oS.opay1,ins:b.oldIns*oS.ob0/Math.max(1,b.oldBal)},
+    {k:'v2',n:'Po refinancování',bal:oS.obFix2,rate:b.rateAfter,term:rem3,pay:pm(oS.obFix2,b.rateAfter,rem3),ins:insA(oS.obFix2)},
+    {k:'v1',n:'Po refinancování + '+kn(X)+' úspor',bal:ob3,rate:b.rateAfter,term:rem3,pay:pm(ob3,b.rateAfter,rem3),ins:insA(ob3)}
+  ];
+  var mx3=Math.max.apply(null,st3.map(function(x){return x.pay+x.ins;}));
+  var t3='<table><thead><tr><th></th><th class="num">Zůstatek</th><th class="num">Sazba</th><th class="num">Splatnost</th><th class="num">Splátka + pojištění</th><th class="num">Celkem</th></tr></thead><tbody>'+
+    st3.map(function(x){return '<tr><th scope="row">'+mk3(x)+'</th><td class="num">'+kc(x.bal)+'</td><td class="num">'+pc(x.rate,2)+'</td><td class="num">'+yrs(x.term)+'</td><td class="num">'+kn(x.pay)+' + '+kn(x.ins)+'</td><td class="num"><b>'+kc(x.pay+x.ins)+'</b></td></tr>';}).join('')+'</tbody></table>';
+  function mk3(x){return '<span class="vh '+x.k+'"><span class="mk" aria-hidden="true"></span>'+x.n+'</span>';}
+  var bars3=st3.map(function(x){return '<div class="hrow '+x.k+'"><span class="nm"><span class="mk" aria-hidden="true"></span>'+x.n+'</span><div class="track" aria-hidden="true"><div class="fill" style="left:0;width:'+((x.pay+x.ins)/Math.max(1,mx3)*100).toFixed(1)+'%"></div></div><span class="hv num">'+kc(x.pay+x.ins)+'</span></div>';}).join('');
+  h+=panel('h0b','Stará hypotéka ve třech stavech','Kolik měsíčně platíte za starý byt dnes, po refinancování a po refinancování, když tam dáte '+kc(X)+' z úspor. Splátky jsou anuitní.',bars3+tw('Stará hypotéka',t3)+'<p class="note">Třetí řádek počítá s úsporami přesně v zadané výši. V modelu varianty B se při refinancování použijí navíc i peníze, které se mezitím měsíčně ušetřily, proto je tam zůstatek o něco nižší.</p>');
+
   /* 1 výchozí situace */
   var t1='<table class="nomin"><thead><tr><th>Co máš</th><th class="num">Hodnota</th></tr></thead><tbody>'+
    '<tr class="sec"><td colspan="2">Starý byt</td></tr>'+
