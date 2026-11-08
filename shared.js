@@ -91,10 +91,11 @@ function clone(o){return JSON.parse(JSON.stringify(o));}
 function seed(){return [
  {id:1,name:'Silurská 4+kk, 94 m²',note:'Ukázka',v:{price:13998700,reno:350000,newServ:17000,usedA:1000000,usedB:1000000,rateA:5,rateB:5.29,term:30,insA:5000,insB:6500}},
  {id:2,name:'Sazovická, Zličín 4+kk, 116 m²',note:'Terasa, 2 garážová stání. Zálohy a pojištění jsou odhad.',v:{price:17950000,reno:350000,newServ:11650,usedA:1000000,usedB:1000000,rateA:4.79,rateB:4.79,term:30,insA:6900,insB:9976}},
- {id:3,name:'Kutrovická, Řepy 4+kk, 141 m²',note:'3. NP z 4, rok 2015, 2 garážová stání a sklep v ceně, cena vč. provize a právního servisu. Pojištění podle kalkulačky Moneta (6 336 Kč při hypotéce 11 mil.), zálohy jsou odhad.',v:{price:16950000,reno:350000,newServ:15000,usedA:1000000,usedB:1000000,rateA:4.79,rateB:4.79,term:30,insA:6336,insB:9386}}
+ {id:3,name:'Kutrovická, Řepy 4+kk, 141 m²',note:'3. NP z 4, rok 2015, 2 garážová stání a sklep v ceně, cena vč. provize a právního servisu. Pojištění podle kalkulačky Moneta (6 336 Kč při hypotéce 11 mil.), zálohy jsou odhad.',v:{price:16950000,reno:350000,newServ:15000,usedA:1000000,usedB:1000000,rateA:4.79,rateB:4.79,term:30,insA:6336,insB:9386}},
+ {id:4,name:'Přeučilova, Stodůlky 4+kk, 86 m²',note:'Poslední patro, výtah, terasa 99 m² + balkon 10 m², 2 parkovací stání a sklep 5 m². Měsíční náklady 4 933 Kč (z toho fond oprav 1 561 Kč). Cena klesla z 16 990 000 Kč. Pojištění hypotéky je odhad podle Moneta (úměrně výši úvěru).',v:{price:15950000,reno:350000,newServ:4933,usedA:1000000,usedB:1000000,rateA:4.79,rateB:4.79,term:30,insA:5800,insB:8800}}
 ];}
 
-var st={base:clone(BDEF),exp:clone(EDEF),ann:clone(ADEF),profiles:seed(),sel:1,nextId:4};
+var st={base:clone(BDEF),exp:clone(EDEF),ann:clone(ADEF),profiles:seed(),sel:1,nextId:5};
 function isNum(x){return typeof x==='number'&&isFinite(x);}
 function sum(o){var t=0;for(var k in o)if(isNum(o[k]))t+=o[k];return t;}
 function scaleExp(total){
@@ -244,7 +245,7 @@ function mountChips(el,opts){
   return draw;
 }
 function resetAll(){
-  st.base=clone(BDEF);st.exp=clone(EDEF);st.ann=clone(ADEF);st.profiles=seed();st.sel=1;st.nextId=4;save();fire();
+  st.base=clone(BDEF);st.exp=clone(EDEF);st.ann=clone(ADEF);st.profiles=seed();st.sel=1;st.nextId=5;save();fire();
 }
 function shareUrl(page){
   return location.href.split('#')[0].replace(/[^\/]*$/,'')+(page||'index.html')+'#d='+btoa(unescape(encodeURIComponent(JSON.stringify(st))));
