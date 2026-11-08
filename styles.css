@@ -309,3 +309,24 @@ footer.foot{margin-top:28px;color:var(--mut);font-size:12.5px;max-width:100ch}
 .inp-title{padding:0 24px}
 @media (min-width:1100px){.vgrid.three{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .stepn{display:inline-grid;place-items:center;width:30px;height:30px;margin-right:12px;border-radius:50%;background:var(--acc);color:var(--acc-ink);font-size:15px;font-weight:700;vertical-align:middle}
+
+/* barevné oddělení sekcí ve vstupech */
+:root{--s-teal:#0E7C86;--s-rose:#B8386E}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--s-teal:#5CCBD6;--s-rose:#F08AB4}}
+:root[data-theme="dark"]{--s-teal:#5CCBD6;--s-rose:#F08AB4}
+fieldset.grp:nth-of-type(6n+1),details.acc:nth-of-type(6n+3){--c:var(--acc)}
+fieldset.grp:nth-of-type(6n+2),details.acc:nth-of-type(6n+4){--c:var(--v2)}
+fieldset.grp:nth-of-type(6n+3),details.acc:nth-of-type(6n+5){--c:var(--v1)}
+fieldset.grp:nth-of-type(6n+4),details.acc:nth-of-type(6n+6){--c:var(--v3)}
+fieldset.grp:nth-of-type(6n+5),details.acc:nth-of-type(6n+1){--c:var(--s-teal)}
+fieldset.grp:nth-of-type(6n+6),details.acc:nth-of-type(6n+2){--c:var(--s-rose)}
+.inp-panel{display:flex;flex-direction:column;gap:14px;padding:16px 16px 20px}
+.grp{padding:14px 16px 10px;border:1px solid color-mix(in srgb,var(--c,var(--acc)) 28%,var(--line));border-left:6px solid var(--c,var(--acc));border-radius:16px;background:color-mix(in srgb,var(--c,var(--acc)) 7%,var(--surface))}
+.grp legend{display:flex;align-items:center;gap:10px;color:color-mix(in srgb,var(--c,var(--acc)) 78%,var(--ink));margin-bottom:8px}
+.grp legend::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--c,var(--acc));flex:none}
+.acc{border-left:6px solid var(--c,var(--acc));border-color:color-mix(in srgb,var(--c,var(--acc)) 28%,var(--line));border-left-color:var(--c,var(--acc));background:color-mix(in srgb,var(--c,var(--acc)) 5%,var(--surface))}
+.acc summary{background:color-mix(in srgb,var(--c,var(--acc)) 10%,var(--surface));border-radius:14px}
+.acc[open] summary{border-bottom-left-radius:0;border-bottom-right-radius:0}
+.acc .at{color:color-mix(in srgb,var(--c,var(--acc)) 78%,var(--ink))}
+.acc .at::before{border-color:var(--c,var(--acc))}
+.accbody{border-top-color:color-mix(in srgb,var(--c,var(--acc)) 22%,var(--line2))}
