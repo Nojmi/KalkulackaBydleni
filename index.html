@@ -148,6 +148,45 @@ function render(){
   var sProf=panel('s-prof','h-prof','Porovnání profilů','Kliknutím vyberete profil, vše se přepočítá.',
     tw('Porovnání profilů',pr)+'<p class="note">Zbývá měsíčně je před ročními výdaji, zbývá za rok po nich. Dnes '+kc(R.D.left)+' měsíčně (za rok '+kc(R.D.yearLeft)+'), při setrvání po refixaci '+kc(R.C.left)+' (za rok '+kc(R.C.yearLeft)+').</p>');
 
+
+/* Sankey: jak se rozdělí měsíční příjem pro jednu variantu */
+var sankK='B';
+function sankey(x){
+  var S0=B.cur&&null;
+  var src=[['Příjem',S.income,'var(--acc)']];
+  if(x.rent>0.5)src.push(['Čistý nájem',x.rent,'var(--v3)']);
+  if(x.yearMonthly<-0.5)src.push(['Chybí',-x.yearMonthly,'var(--neg)']);
+  var hc='var(--'+({D:'v0',C:'v1',A:'v2',B:'v3'}[sankK])+')';
+  var sk=[['Splátka nové hypo',x.pay,hc],['Pojištění nové hypo',x.ins,hc],['Zálohy (nový byt)',x.serv,hc],
+    ['Splátka staré hypo',x.oldPay,hc],['Pojištění staré hypo',x.oldIns,hc],['Zálohy (starý byt)',x.oldServ,hc],
+    ['Ostatní výdaje',S.other,'var(--v0)'],['Roční výdaje (1/12)',ann/12,'var(--mut)'],['Zbývá na spoření',Math.max(0,x.yearMonthly),'var(--acc)']].filter(function(a){return a[1]>0.5;});
+  var W=620,xL=150,wN=12,xR=420,tot=0;sk.forEach(function(a){tot+=a[1];});
+  var sc=300/tot,GAP=6,MINSLOT=36;
+  var y=14,nodes=sk.map(function(a){var nh=Math.max(a[1]*sc,4),sl=Math.max(nh,MINSLOT),o={n:a[0],v:a[1],c:a[2],nh:nh,top:y+(sl-nh)/2,mid:y+sl/2};y+=sl+GAP;return o;});
+  var H=y-GAP+14;
+  var sh=0;src.forEach(function(a){sh+=a[1]*sc;});sh+=(src.length-1)*14;
+  var sy=Math.max(14,(H-sh)/2),sn=src.map(function(a){var h=a[1]*sc,o={n:a[0],v:a[1],c:a[2],top:sy,h:h,off:0};sy+=h+14;return o;});
+  var rem=src.map(function(a){return a[1];});
+  var rib='',nd='',lb='',inOff=nodes.map(function(){return 0;});
+  nodes.forEach(function(t,ti){
+    var need=t.v;
+    for(var si=0;si<src.length&&need>0.001;si++){
+      var take=Math.min(rem[si],need);if(take<=0.001)continue;
+      var sH=take*sc,tH=take/t.v*t.nh,s0=sn[si].top+sn[si].off,t0=t.top+inOff[ti];
+      sn[si].off+=sH;inOff[ti]+=tH;rem[si]-=take;need-=take;
+      var m=(xL+wN+xR)/2;
+      rib+='<path d="M'+(xL+wN)+' '+s0.toFixed(1)+'C'+m+' '+s0.toFixed(1)+' '+m+' '+t0.toFixed(1)+' '+xR+' '+t0.toFixed(1)+'L'+xR+' '+(t0+tH).toFixed(1)+'C'+m+' '+(t0+tH).toFixed(1)+' '+m+' '+(s0+sH).toFixed(1)+' '+(xL+wN)+' '+(s0+sH).toFixed(1)+'Z" fill="'+(src[si][2]==='var(--acc)'&&t.c!=='var(--acc)'?t.c:src[si][2]==='var(--acc)'?t.c:src[si][2])+'" class="rib"><title>'+esc(src[si][0])+' → '+esc(t.n)+': '+kc(take)+'</title></path>';
+    }
+    nd+='<rect x="'+xR+'" y="'+t.top.toFixed(1)+'" width="'+wN+'" height="'+t.nh.toFixed(1)+'" rx="2" fill="'+t.c+'"/>';
+    lb+='<text x="'+(xR+wN+8)+'" y="'+(t.mid-2).toFixed(1)+'">'+esc(t.n)+'</text><text class="v" x="'+(xR+wN+8)+'" y="'+(t.mid+14).toFixed(1)+'">'+kc(t.v)+'</text>';
+  });
+  sn.forEach(function(o){
+    nd+='<rect x="'+xL+'" y="'+o.top.toFixed(1)+'" width="'+wN+'" height="'+Math.max(o.h,4).toFixed(1)+'" rx="2" fill="'+o.c+'"/>';
+    var mid=o.top+Math.max(o.h,4)/2;
+    lb+='<text text-anchor="end" x="'+(xL-8)+'" y="'+(mid-2).toFixed(1)+'">'+esc(o.n)+'</text><text class="v" text-anchor="end" x="'+(xL-8)+'" y="'+(mid+14).toFixed(1)+'">'+kc(o.v)+'</text>';
+  });
+  return '<svg class="sank" viewBox="0 0 '+W+' '+H.toFixed(0)+'" role="img" aria-label="Rozdělení měsíčního příjmu, varianta '+esc(NAMES[sankK])+'">'+rib+nd+lb+'</svg>';
+}
   /* měsíční rozpočet */
   var t='<table>'+head('')+'<tbody>';
   function tr(l,fn,cls){t+='<tr'+(cls?' class="'+cls+'"':'')+'><th scope="row">'+l+'</th>'+ORDER.map(function(k){return '<td class="num">'+fn(R[k],k)+'</td>';}).join('')+'</tr>';}
@@ -185,6 +224,8 @@ function render(){
   sm('rozdíl oproti dnes',function(x,k){return k==='D'?null:x.left-R.D.left;});
   sm('rozdíl oproti prodeji bytu',function(x,k){return (k==='D'||k==='A')?null:x.left-R.A.left;});
   t+='</tbody></table>';
+  var sSank=panel('s-sank','h-sank','Kam jdou peníze: '+esc(P.name),'Jak se rozdělí měsíční příjem. Šířka pruhu odpovídá částce. Zbývá po rozpuštění ročních výdajů do měsíce.',
+    '<div class="seg vsel" role="group" aria-label="Varianta">'+ORDER.map(function(k){return '<button class="seg-i" type="button" data-sk="'+k+'" aria-pressed="'+(k===sankK)+'">'+NAMES[k]+'</button>';}).join('')+'</div><div class="sankwrap">'+sankey(R[sankK])+'</div>');
   var sBud=panel('s-bud','h-bud','Měsíční rozpočet: '+esc(P.name),'Čtyři varianty vedle sebe, částky v Kč.',tw('Měsíční rozpočet čtyř variant',t));
 
   /* roční přehled */
@@ -292,7 +333,7 @@ function render(){
     '<div class="verdict"><h3>Můj názor</h3>'+op.map(function(x){return '<p>'+x+'</p>';}).join('')+
     '<p class="note">Je to pohled z čísel, která jsi zadal, a nejsem finanční poradce. Výsledek závisí na odhadech výdajů, úroku po refixaci a obsazenosti bytu. Přesné parametry ověř u banky.</p></div>');
 
-  outEl.innerHTML='<div class="resA">'+sProf+sBud+sVyd+sNaj+'</div><div class="resB">'+sRok+sGr+sSh+'</div>';
+  outEl.innerHTML='<div class="resA">'+sProf+sBud+sSank+sVyd+sNaj+'</div><div class="resB">'+sRok+sGr+sSh+'</div>';
   var et=document.getElementById('expTot'),at=document.getElementById('annTot');
   if(et)et.textContent=kc(B.expTotal());
   if(at)at.textContent=kc(B.annTotal());
@@ -353,6 +394,7 @@ inEl.addEventListener('focusout',function(e){
   el.value=fmtIn(store(el.dataset.s)[el.dataset.k],+el.dataset.d);
 });
 document.addEventListener('click',function(e){
+  var sk=e.target.closest&&e.target.closest('[data-sk]');if(sk){sankK=sk.dataset.sk;render();return;}
   var r=e.target.closest&&e.target.closest('[data-profile]');if(r){B.select(+r.dataset.profile);return;}
   var tr=e.target.closest&&e.target.closest('tr[data-id]');if(tr&&!e.target.closest('.why'))B.select(+tr.dataset.id);
 });

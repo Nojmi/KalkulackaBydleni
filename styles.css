@@ -335,3 +335,18 @@ fieldset.grp:nth-of-type(6n+6),details.acc:nth-of-type(6n+2){--c:var(--s-rose)}
 .sub{margin:6px 0 12px;padding:2px 0 6px 12px;border-left:3px solid color-mix(in srgb,var(--c,var(--acc)) 45%,var(--line))}
 .sub>summary{cursor:pointer;font-weight:600;font-size:14px;padding:8px 0;color:color-mix(in srgb,var(--c,var(--acc)) 78%,var(--ink))}
 .field input[readonly]{background:transparent;font-weight:700;cursor:default}
+
+/* Sankey */
+.vsel{margin:0 0 12px;flex-wrap:wrap}
+.vsel .seg-i{border:0;background:transparent;cursor:pointer;font:inherit;font-weight:600;font-size:13.5px;color:var(--mut);min-height:38px;padding:0 12px}
+.vsel .seg-i[aria-pressed="true"]{background:var(--acc);color:var(--acc-ink)}
+.sank{width:100%;height:auto;display:block}
+.sank text{font-size:14px;fill:var(--ink)}
+.sank text.v{font-size:12.5px;fill:var(--mut)}
+.sank .rib{opacity:.34}.sank .rib:hover{opacity:.6}
+
+@media (max-width:560px){
+  .sank text{font-size:18px}.sank text.v{font-size:15.5px}
+  .vsel{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  .vsel .seg-i{justify-content:center;padding:0 6px}
+}
