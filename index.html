@@ -89,10 +89,11 @@ function render(){
     rows.push(['Splátky všech hypoték',kc(x.pay+x.ins+x.oldPay+x.oldIns),'sum']);return T('Splátky všech hypoték vč. pojištění',rows);
   }
   function newPayTip(k,x){
-    var rows=[['Kupní cena',kc(S.price)],['+ vybavení a náklady po koupi',kc(S.reno)]];
+    var rows=[['Kupní cena',kc(S.price)]];
     if(k==='A'){rows.push(['− z prodeje starého bytu (cena − náklady − zbývající hypotéka)',kc(-R.cash)]);rows.push(['− vlastní peníze',kc(-S.usedA)]);}
     else rows.push(['− vlastní peníze',kc(-S.usedB)]);
     rows.push(['Výše hypotéky',kc(x.loan),'sum']);
+    if(S.reno)rows.push(['Rekonstrukci za '+kc(S.reno)+' platíš z úspor, není v hypotéce','','dim']);
     rows.push(['Úrok '+fp(k==='A'?S.rateA:S.rateB)+', splatnost '+S.term+' let','','dim']);
     rows.push(['Měsíční splátka',kc(x.pay),'sum']);
     return T('Splátka nové hypotéky',rows);
@@ -260,7 +261,7 @@ function render(){
   }).join('');
   var facts='<ul class="facts">'+
     '<li>Splátka staré hypotéky po refixaci vzroste z <b>'+kc(R.payNow)+'</b> na <b>'+kc(R.oldPay)+'</b> měsíčně.</li>'+
-    '<li>Z prodeje starého bytu zbude po doplacení hypotéky a nákladech <b>'+kc(R.cash)+'</b>. Nový byt s vybavením stojí <b>'+kc(S.price+S.reno)+'</b>.</li>'+
+    '<li>Z prodeje starého bytu zbude po doplacení hypotéky a nákladech <b>'+kc(R.cash)+'</b>. Nový byt stojí <b>'+kc(S.price)+'</b>, rekonstrukci za <b>'+kc(S.reno)+'</b> zaplatíš z úspor.</li>'+
     '<li>Dnes ti po měsíčních výdajích zbývá <b>'+kc(Dd.left)+'</b>, po ročních výdajích <b>'+kc(Dd.yearLeft)+'</b> za rok.</li>'+
     '<li>Při pronájmu je dluh o <b>'+kc(Math.abs(R.B.debt-R.A.debt))+'</b> '+(R.B.debt>=R.A.debt?'vyšší':'nižší')+' než při prodeji a zbývá o <b>'+kc(Math.abs(R.B.yearLeft-R.A.yearLeft))+'</b> ročně '+(R.B.yearLeft>=R.A.yearLeft?'víc':'méně')+'.</li></ul>';
   /* názor podle čísel */
@@ -302,11 +303,16 @@ function fieldHtml(id,label,unit,dec,scope){
   var fid='f-'+scope+'-'+id;
   return '<div class="field"><label for="'+fid+'">'+label+'</label><div class="inp"><input id="'+fid+'" data-s="'+scope+'" data-k="'+id+'" type="text" inputmode="decimal" autocomplete="off" data-d="'+(dec||0)+'"><span class="u">'+unit+'</span></div></div>';
 }
+function renoHtml(f){
+  return '<div class="field"><label for="f-p-reno">'+f[1]+'</label><div class="inp"><input id="f-p-reno" data-s="p" data-k="reno" data-d="0" type="text" readonly tabindex="-1" aria-readonly="true"><span class="u">Kč</span></div></div>'+
+    '<details class="sub" open><summary>Rozpis rekonstrukce</summary>'+B.RENO.map(function(r){return fieldHtml(r[0],r[1],'Kč',0,'p');}).join('')+
+    '<p class="note" style="margin:6px 0 0">Součet se platí z úspor a nezvyšuje úvěr.</p></details>';
+}
 function build(){
   var h='<div class="panel inp-panel"><fieldset class="grp"><legend id="plegend">Profil nemovitosti</legend>'+
     '<div class="field col"><label for="pname">Název profilu</label><div class="inp"><input class="txt" id="pname" type="text" autocomplete="off" maxlength="60"></div></div>'+
     '<div class="field col"><label for="pnote">Poznámka (adresa, odkaz, na co si dát pozor)</label><div class="inp"><input class="txt" id="pnote" type="text" autocomplete="off" maxlength="300"></div></div>'+
-    B.PF.map(function(f){return fieldHtml(f[0],f[1],f[2],f[3],'p');}).join('')+
+    B.PF.map(function(f){return f[0]==='reno'?renoHtml(f):fieldHtml(f[0],f[1],f[2],f[3],'p');}).join('')+
     '<button class="ghost sm" type="button" id="zero" style="margin-top:10px">Vynulovat čísla profilu</button></fieldset>';
   B.BG.forEach(function(g){
     h+='<fieldset class="grp"><legend>'+g.t+'</legend>'+g.f.map(function(f){return fieldHtml(f[0],f[1],f[2],f[4],'b');}).join('')+'</fieldset>';
@@ -338,6 +344,7 @@ inEl.addEventListener('input',function(e){
   if(el.id==='pnote'){P.note=el.value;B.save();return;}
   if(!el.dataset.k)return;
   store(el.dataset.s)[el.dataset.k]=parse(el.value);
+  if(el.dataset.s==='p'&&B.RIDS.indexOf(el.dataset.k)>=0){var pv=B.cur().v;pv.reno=B.renoTotal(pv);var tt=document.getElementById('f-p-reno');if(tt)tt.value=fmtIn(pv.reno,0);}
   B.save();render();
 });
 inEl.addEventListener('focusin',function(e){if(e.target.tagName==='INPUT')e.target.select();});

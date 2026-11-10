@@ -83,7 +83,7 @@ var GROUPS=[
   ['oldGarage','Garáž nebo parkování','Kč/měs',0]
  ]},
  {t:'Nový byt',f:[
-  ['reno','Vybavení a náklady po koupi (kuchyň, nábytek, stěhování, právník)','Kč',350000],
+  ['reno','Rekonstrukce a vybavení (platí se z úspor, nezvyšuje úvěr)','Kč',350000],
   ['newSvj','Zálohy do SVJ / fondu','Kč/měs',17000],
   ['newEnergy','Elektřina a internet','Kč/měs',0],
   ['newIns','Pojištění bytu','Kč/měs',0]
@@ -177,11 +177,11 @@ function calc(S0,gOv){
   var g=(gOv!=null?gOv:S.gHouse)/100,rE=S.rEtf/100,gI=S.incGrowth/100,gE=S.expGrowth/100,gR=S.rentGrowth/100;
   var incAvg=S.incAvg,incBase=S.incAvg;
   var proceeds=S.oldValue-S.oldBal-S.sellLegal;
-  var need=S.price+S.reno;
+  var need=S.price;
   var srcA=proceeds+S.ownA,loanA=Math.max(0,need-srcA),extraA=Math.max(0,srcA-need);
-  var etfA=Math.max(0,S.etf-S.ownA)+extraA;
+  var etfA=Math.max(0,S.etf-S.ownA-S.reno)+extraA;
   var loanB=Math.max(0,need-S.ownB);
-  var etfB=Math.max(0,S.etf-S.ownB-S.prepayOld)+Math.max(0,S.ownB-need);
+  var etfB=Math.max(0,S.etf-S.ownB-S.prepayOld-S.reno)+Math.max(0,S.ownB-need);
   var schA=schedule(loanA,S.rateA,S.term,S.insA,S.dRate,0);
   var schB=schedule(loanB,S.rateB,S.term,S.insB,S.dRate,0);
   var oldB=schedule(S.oldBal,S.oldRate,S.oldTerm,S.oldIns,S.dRate,S.prepayOld);

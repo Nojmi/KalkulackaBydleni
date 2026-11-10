@@ -7,7 +7,7 @@ var KEY='bydleni-spolecne-v1',OLD1='kalkulacka-profily-v1',OLD0='kalkulacka-vets
 /* pole profilu nemovitosti: [id, popis, jednotka, desetinná místa] */
 var PF=[
  ['price','Kupní cena','Kč'],
- ['reno','Kuchyň, nábytek, stěhování, právník','Kč'],
+ ['reno','Rekonstrukce a vybavení celkem (z úspor, nezvyšuje úvěr)','Kč'],
  ['newServ','Zálohy, energie a pojištění bytu','Kč/měs'],
  ['usedA','Vlastní peníze do koupě, když starý byt prodáte','Kč'],
  ['usedB','Vlastní peníze do koupě, když starý byt necháte','Kč'],
@@ -17,6 +17,20 @@ var PF=[
  ['insA','Pojištění hypotéky, když starý byt prodáte','Kč/měs'],
  ['insB','Pojištění hypotéky, když starý byt necháte','Kč/měs']
 ];
+/* rozpis rekonstrukce: součet jde do pole reno a platí se z úspor, ne z úvěru */
+var RENO=[
+ ['r1','Kuchyň (linka, spotřebiče)'],
+ ['r2','Koupelna a WC'],
+ ['r3','Podlahy a obklady'],
+ ['r4','Malování, omítky a štuky'],
+ ['r5','Elektroinstalace a osvětlení'],
+ ['r6','Rozvody vody a topení'],
+ ['r7','Okna, dveře a stínění'],
+ ['r8','Vestavěné skříně a nábytek'],
+ ['r9','Terasa a balkon (hydroizolace, dlažba, pergola)'],
+ ['r10','Stěhování, právník a ostatní']
+];
+var RIDS=RENO.map(function(f){return f[0];});
 /* společné údaje: [id, popis, jednotka, výchozí, desetinná místa] */
 var BG=[
  {t:'Domácnost',f:[
@@ -83,7 +97,7 @@ var ANN=[
  ['appl','Rezerva na spotřebiče a elektroniku (lednička, TV)',15000]
 ];
 
-var BDEF={},BIDS=[],PIDS=PF.map(function(f){return f[0];}),EDEF={},ADEF={};
+var BDEF={},BIDS=[],PIDS=PF.map(function(f){return f[0];}).concat(RIDS),EDEF={},ADEF={};
 BG.forEach(function(g){g.f.forEach(function(f){BDEF[f[0]]=f[3];BIDS.push(f[0]);});});
 EXP.forEach(function(e){EDEF[e[0]]=e[2];});
 ANN.forEach(function(e){ADEF[e[0]]=e[2];});
@@ -97,6 +111,11 @@ function seed(){return [
 
 var st={base:clone(BDEF),exp:clone(EDEF),ann:clone(ADEF),profiles:seed(),sel:1,nextId:5};
 function isNum(x){return typeof x==='number'&&isFinite(x);}
+function renoTotal(v){var t=0;RIDS.forEach(function(k){if(isNum(v[k]))t+=v[k];});return t;}
+function fixReno(p){var v=p.v,any=RIDS.some(function(k){return isNum(v[k])&&v[k]>0;});
+  if(!any&&isNum(v.reno)&&v.reno>0)v.r10=v.reno;
+  RIDS.forEach(function(k){if(!isNum(v[k]))v[k]=0;});v.reno=renoTotal(v);}
+function fixAll(){st.profiles.forEach(fixReno);}
 function sum(o){var t=0;for(var k in o)if(isNum(o[k]))t+=o[k];return t;}
 function scaleExp(total){
   var f=total/sum(EDEF),t=0;
@@ -178,7 +197,7 @@ function calc(p){
   balFix=Math.max(0,balFix);
   var oldPay=pmt(balFix,s.rateAfter,s.oldYears-m/12);
   var cash=s.oldValue-s.sellCost-balFix;
-  var need=s.price+s.reno;
+  var need=s.price;                         /* rekonstrukce se platí z úspor, ne z úvěru */
   var loanA=Math.max(0,need-cash-s.usedA);
   var loanB=Math.max(0,need-s.usedB);
   var payA=pmt(loanA,s.rateA,s.term),payB=pmt(loanB,s.rateB,s.term);
@@ -189,7 +208,7 @@ function calc(p){
   A.debt=loanA;B.debt=loanB+balFix;C.debt=balFix;
   var D={loan:0,pay:0,ins:0,serv:0,oldPay:payNow,oldIns:s.oldIns,oldServ:s.oldServ,rent:0,debt:s.oldBal};
   A.cash=cash;
-  A.savLeft=s.savings-s.usedA;B.savLeft=s.savings-s.usedB;C.savLeft=s.savings;D.savLeft=s.savings;
+  A.savLeft=s.savings-s.usedA-s.reno;B.savLeft=s.savings-s.usedB-s.reno;C.savLeft=s.savings;D.savLeft=s.savings;
   [A,B,C,D].forEach(function(x){
     x.housing=x.pay+x.ins+x.serv+x.oldPay+x.oldIns+x.oldServ-x.rent;
     x.left=s.income-s.other-x.housing;       /* zbývá měsíčně před ročními výdaji */
@@ -215,7 +234,7 @@ function fire(){listeners.forEach(function(f){f();});}
 function select(id){st.sel=id;save();fire();}
 function addProfile(){
   var c=cur(),v={};PIDS.forEach(function(k){v[k]=0;});
-  ['reno','term','usedA','usedB','rateA','rateB'].forEach(function(k){v[k]=c.v[k];});
+  ['term','usedA','usedB','rateA','rateB'].forEach(function(k){v[k]=c.v[k];});
   var p={id:st.nextId++,name:'Nový profil '+(st.profiles.length+1),note:'',v:v};
   st.profiles.push(p);st.sel=p.id;save();fire();return p;
 }
@@ -245,15 +264,15 @@ function mountChips(el,opts){
   return draw;
 }
 function resetAll(){
-  st.base=clone(BDEF);st.exp=clone(EDEF);st.ann=clone(ADEF);st.profiles=seed();st.sel=1;st.nextId=5;save();fire();
+  st.base=clone(BDEF);st.exp=clone(EDEF);st.ann=clone(ADEF);st.profiles=seed();fixAll();st.sel=1;st.nextId=5;save();fire();
 }
 function shareUrl(page){
   return location.href.split('#')[0].replace(/[^\/]*$/,'')+(page||'index.html')+'#d='+btoa(unescape(encodeURIComponent(JSON.stringify(st))));
 }
 w.addEventListener('hashchange',function(){if(/^#[dp]=/.test(location.hash))location.reload();});
 
-load();
-w.BYD={st:st,PF:PF,BG:BG,EXP:EXP,ANN:ANN,BDEF:BDEF,PIDS:PIDS,BIDS:BIDS,cur:cur,calc:calc,save:save,expTotal:expTotal,annTotal:annTotal,
+load();fixAll();
+w.BYD={RENO:RENO,RIDS:RIDS,renoTotal:renoTotal,fixReno:fixReno,st:st,PF:PF,BG:BG,EXP:EXP,ANN:ANN,BDEF:BDEF,PIDS:PIDS,BIDS:BIDS,cur:cur,calc:calc,save:save,expTotal:expTotal,annTotal:annTotal,
   kc:kc,fmtIn:fmtIn,parse:parse,sgn:sgn,esc:esc,pmt:pmt,
   select:select,addProfile:addProfile,dupProfile:dupProfile,delProfile:delProfile,resetAll:resetAll,shareUrl:shareUrl,
   mountNav:mountNav,mountChips:mountChips,onChange:onChange,fire:fire};

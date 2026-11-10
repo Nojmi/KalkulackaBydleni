@@ -82,7 +82,7 @@ var GROUPS=[
  ]},
  {t:'Nový byt (vybraný profil)',open:0,f:[
   ['p','price','Cena nového bytu','Kč',0],
-  ['p','reno','Vybavení a náklady po koupi','Kč',0]
+  ['p','reno','Rekonstrukce a vybavení (z úspor, nezvyšuje úvěr)','Kč',0]
  ]}
 ];
 var NAMES={S:'Úspory do nového bytu',F:'Úspory na starou hypo při refinancování'};
@@ -103,7 +103,7 @@ function pm(P,rate,n){if(P<=0)return 0;if(n<=0)return P;var r=rate/1200;if(r===0
 function sim(opt,rbig,bud){
   var b=st.base,pv=BY.cur().v,N=360;
   var oldN=Math.round(b.oldYears*12),mF=Math.max(0,Math.min(Math.round(b.monthsFix),oldN));
-  var need=pv.price+pv.reno,X=Math.max(0,L.X);
+  var need=pv.price,X=Math.max(0,L.X);
   var ob=b.oldBal,orate=b.oldRate,hold=0,newLoan,nrate,nins,intoFlat=0,intoOld=0,parked=0;
   var small=(opt==='S');
   nrate=small?L.rateSmall:(rbig!=null?rbig:L.rateBig);nins=small?L.insSmall:L.insBig;
@@ -245,7 +245,7 @@ function render(){
   var mx=0;KEYS.forEach(function(k){mx=Math.max(mx,R0[k].out[m1],R0[k].out[m2]);});
   var bud=L.bud>0?L.bud:Math.ceil(mx/5000)*5000;
   var R=simAll(bud);
-  var need=pv.price+pv.reno;
+  var need=pv.price;
   var h='';
 
   /* 0 příklad v kostce */
@@ -288,8 +288,8 @@ function render(){
    '<tr><th scope="row">Zbývající splatnost</th><td class="num">'+fmtIn(b.oldYears,1)+' let</td></tr>'+
    '<tr class="sec"><td colspan="2">Nový byt: '+esc(BY.cur().name)+'</td></tr>'+
    '<tr><th scope="row">Cena</th><td class="num">'+kc(pv.price)+'</td></tr>'+
-   '<tr><th scope="row">Vybavení a náklady po koupi</th><td class="num">'+kc(pv.reno)+'</td></tr>'+
-   '<tr class="strong"><th scope="row">Potřebuješ celkem</th><td class="num">'+T('Potřebuješ celkem',[['Cena',kc(pv.price)],['+ vybavení',kc(pv.reno)],['Celkem',kc(need),'sum']])+kc(need)+'</td></tr>'+
+   '<tr><th scope="row">Rekonstrukce (platíš z úspor, není v úvěru)</th><td class="num">'+kc(pv.reno)+'</td></tr>'+
+   '<tr class="strong"><th scope="row">Cena k financování</th><td class="num">'+T('Cena k financování',[['Cena',kc(pv.price)],['Celkem',kc(need),'sum']])+kc(need)+'</td></tr>'+
    '<tr class="sec"><td colspan="2">Úspory</td></tr>'+
    '<tr class="hl"><th scope="row">Kolik z úspor chceš použít</th><td class="num">'+kc(X)+'</td></tr></tbody></table>';
   h+=step(1,'h1','Co máš na začátku','Tyto údaje se berou ze vstupů vlevo a ze základní kalkulačky. Nic dalšího se tu nepočítá.',tw('Výchozí situace',t1));
@@ -303,7 +303,7 @@ function render(){
   tr('Do koupě nového bytu',function(k,r){return dash(r.intoFlat);});
   tr('Zůstanou na účtu do refixace',function(k,r){return dash(r.parked);});
   sec('Výsledné dluhy po tomto kroku');
-  tr('Nový úvěr',function(k,r){return T('Nový úvěr',[['Potřebuješ celkem',kc(need)],['− úspory vložené do koupě',kc(-r.intoFlat)],['Nový úvěr',kc(r.newLoan),'sum']])+kc(r.newLoan);},'strong');
+  tr('Nový úvěr',function(k,r){return T('Nový úvěr',[['Cena k financování',kc(need)],['− úspory vložené do koupě',kc(-r.intoFlat)],['Nový úvěr',kc(r.newLoan),'sum']])+kc(r.newLoan);},'strong');
   tr('Stará hypotéka',function(k,r){return T('Stará hypotéka po kroku',[['Zůstatek dnes',kc(b.oldBal)],['Stará hypotéka',kc(r.ob0),'sum']])+kc(r.ob0);},'strong');
   tr('Dluh celkem',function(k,r){return kc(r.newLoan+r.ob0);});
   sec('Podmínky nového úvěru (jsou vstupy vlevo)');
