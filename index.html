@@ -372,7 +372,8 @@ function sankMain(x){
   var tenSvj=Math.max(0,S.svjTotal-S.owner);
   var w='<div class="wf tot"><span class="t">Nájem za měsíc</span><div class="track" aria-hidden="true"><div class="fill" style="left:0%;width:100%"></div></div><span class="num">'+kc(S.rent)+'</span></div>'+
     wf('Neobsazenost (obsazeno '+ti.eff+' měsíců z 12)',S.rent-rM,false)+wf('Poplatky SVJ, které platí vlastník',S.owner,false)+wf('Opravy a drobné náklady',S.repairs,false)+(ti.extraM?wf('Výměna nájemníka, daň z nemovitých věcí',ti.extraM,false):'')+wf('Daň z nájmu ('+['','A','B','C'][ti.mode]+')',S.tax,false)+
-    wf('Příjem z pronájmu po nákladech',0,true,netBefore);
+    wf('Příjem z pronájmu po nákladech',0,true,netBefore)+wf('Splátka hypotéky starého bytu',R.oldPay,false)+wf('Pojištění hypotéky',S.oldInsAfter,false)+
+    wf((R.oldPay+S.oldInsAfter<=netBefore?'Pronájem ti měsíčně přispívá':'Na pronájem měsíčně doplácíš'),0,true,netAfter);
   function r2(l,v,cls){var c=cls?(v<0?'neg':''):'';return '<tr'+(cls?' class="'+cls+'"':'')+'><th scope="row">'+l+'</th><td class="num '+c+'">'+kc(v)+'</td><td class="num '+c+'">'+kc(v*12)+'</td></tr>';}
   var tb='<table class="nomin"><thead><tr><th>Hypotéka starého bytu po refixaci</th><th class="num">Měsíčně</th><th class="num">Ročně</th></tr></thead><tbody>'+
     r2('Splátka hypotéky',-R.oldPay)+r2('Pojištění hypotéky',-S.oldInsAfter)+r2('Příjem z pronájmu po nákladech',netBefore)+
