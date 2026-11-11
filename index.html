@@ -220,10 +220,10 @@ function sankRent(x){
   tr('Splátka staré hypotéky',function(x,k){return x.oldPay?oldPayTip(k,x)+kc(x.oldPay):'–';});
   tr('Pojištění staré hypotéky',function(x){return dash(x.oldIns);});
   tr('Zálohy, energie a garáž',function(x){return dash(x.oldServ);});
-  tr('Součet před odečtením pronájmu',function(x){return kc(x.housing+x.rent);});
+  tr('Součet před odečtením pronájmu',function(x){return kc(x.housing+x.rent);},'key');
   tr('Příjem z pronájmu po nákladech',function(x){return x.rent?rentTip()+kc(-x.rent):'–';});
-  tr('Bydlení celkem',function(x){return houseTip(x)+kc(x.housing);},'strong');
-  tr('Co zbývá měsíčně',function(x){return leftTip(x)+lc(x);},'hl');
+  tr('Bydlení celkem',function(x){return houseTip(x)+kc(x.housing);},'strong key');
+  tr('Co zbývá měsíčně',function(x){return leftTip(x)+lc(x);},'hl key');
   sec('Dluh a úspory');
   tr('Dluh celkem',function(x){return kc(x.debt);});
   tr('Úspory po koupi',function(x){return '<span class="'+(x.savLeft<0?'neg':'')+'">'+kc(x.savLeft)+'</span>';});

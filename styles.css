@@ -353,3 +353,8 @@ fieldset.grp:nth-of-type(6n+6),details.acc:nth-of-type(6n+2){--c:var(--s-rose)}
 
 .vrow{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 12px}.vrow .vsel{margin:0}
 @media (max-width:560px){.vrow{flex-direction:column}}
+
+/* decentní zvýraznění klíčových řádků rozpočtu */
+.tw tr.key>*{font-weight:700;background:color-mix(in srgb,var(--acc) 6%,transparent)}
+.tw tr.key>:first-child{box-shadow:inset 3px 0 0 var(--acc)}
+.tw tr.key.hl>*{background:var(--acc-soft)}
