@@ -314,12 +314,12 @@ footer.foot{margin-top:28px;color:var(--mut);font-size:12.5px;max-width:100ch}
 :root{--s-teal:#0E7C86;--s-rose:#B8386E}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--s-teal:#5CCBD6;--s-rose:#F08AB4}}
 :root[data-theme="dark"]{--s-teal:#5CCBD6;--s-rose:#F08AB4}
-fieldset.grp:nth-of-type(6n+1),details.acc:nth-of-type(6n+3){--c:var(--acc)}
-fieldset.grp:nth-of-type(6n+2),details.acc:nth-of-type(6n+4){--c:var(--v2)}
-fieldset.grp:nth-of-type(6n+3),details.acc:nth-of-type(6n+5){--c:var(--v1)}
-fieldset.grp:nth-of-type(6n+4),details.acc:nth-of-type(6n+6){--c:var(--v3)}
-fieldset.grp:nth-of-type(6n+5),details.acc:nth-of-type(6n+1){--c:var(--s-teal)}
-fieldset.grp:nth-of-type(6n+6),details.acc:nth-of-type(6n+2){--c:var(--s-rose)}
+fieldset.grp:nth-of-type(6n+1),details.acc:nth-of-type(6n+1){--c:var(--acc)}
+fieldset.grp:nth-of-type(6n+2),details.acc:nth-of-type(6n+2){--c:var(--v2)}
+fieldset.grp:nth-of-type(6n+3),details.acc:nth-of-type(6n+3){--c:var(--v1)}
+fieldset.grp:nth-of-type(6n+4),details.acc:nth-of-type(6n+4){--c:var(--v3)}
+fieldset.grp:nth-of-type(6n+5),details.acc:nth-of-type(6n+5){--c:var(--s-teal)}
+fieldset.grp:nth-of-type(6n+6),details.acc:nth-of-type(6n+6){--c:var(--s-rose)}
 .inp-panel{display:flex;flex-direction:column;gap:14px;padding:16px 16px 20px}
 .grp{padding:14px 16px 10px;border:1px solid color-mix(in srgb,var(--c,var(--acc)) 28%,var(--line));border-left:6px solid var(--c,var(--acc));border-radius:16px;background:color-mix(in srgb,var(--c,var(--acc)) 7%,var(--surface))}
 .grp legend{display:flex;align-items:center;gap:10px;color:color-mix(in srgb,var(--c,var(--acc)) 78%,var(--ink));margin-bottom:8px}
@@ -361,3 +361,4 @@ fieldset.grp:nth-of-type(6n+6),details.acc:nth-of-type(6n+2){--c:var(--s-rose)}
 .tw tr.key>:first-child{box-shadow:inset 3px 0 0 var(--acc)}
 .tw tr.key.hl>*{background:var(--acc-soft)}
 .field select.sel{width:100%;min-height:48px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--raised);color:var(--ink);font:inherit;font-weight:600;font-size:14px}
+.inp-groups{display:contents}

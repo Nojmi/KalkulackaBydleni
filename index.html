@@ -397,15 +397,14 @@ function renoHtml(f){
     '<p class="note" style="margin:6px 0 0">Součet se platí z úspor a nezvyšuje úvěr.</p></details>';
 }
 function build(){
-  var h='<div class="panel inp-panel"><fieldset class="grp"><legend id="plegend">Profil nemovitosti</legend>'+
+  var h='<div class="inp-groups"><details class="acc" open><summary><span class="at" id="plegend">Profil nemovitosti</span></summary><div class="accbody">'+
     '<div class="field col"><label for="pname">Název profilu</label><div class="inp"><input class="txt" id="pname" type="text" autocomplete="off" maxlength="60"></div></div>'+
     '<div class="field col"><label for="pnote">Poznámka (adresa, odkaz, na co si dát pozor)</label><div class="inp"><input class="txt" id="pnote" type="text" autocomplete="off" maxlength="300"></div></div>'+
     B.PF.map(function(f){return f[0]==='reno'?renoHtml(f):fieldHtml(f[0],f[1],f[2],f[3],'p');}).join('')+
-    '<button class="ghost sm" type="button" id="zero" style="margin-top:10px">Vynulovat čísla profilu</button></fieldset>';
+    '<button class="ghost sm" type="button" id="zero" style="margin-top:10px">Vynulovat čísla profilu</button></div></details>';
   B.BG.forEach(function(g){
-    h+='<fieldset class="grp"><legend>'+g.t+'</legend>'+g.f.map(function(f){return f[5]?selHtml(f[0],f[1],f[5],'b'):fieldHtml(f[0],f[1],f[2],f[4],'b');}).join('')+'</fieldset>';
+    h+='<details class="acc"><summary><span class="at">'+g.t+'</span></summary><div class="accbody">'+g.f.map(function(f){return f[5]?selHtml(f[0],f[1],f[5],'b'):fieldHtml(f[0],f[1],f[2],f[4],'b');}).join('')+'</div></details>';
   });
-  h+='</div>';
   h+='<details class="acc"><summary><span class="at">Měsíční výdaje domácnosti</span><span class="sum num" id="expTot"></span></summary><div class="accbody">'+
     B.EXP.map(function(e){return fieldHtml(e[0],e[1],'Kč/měs',0,'e');}).join('')+
     '<p class="note" style="margin-top:10px">Bez bydlení a bez spoření. Výchozí rozdělení je jen odhad, přepiš ho podle svého účtu.</p>'+
@@ -413,7 +412,7 @@ function build(){
   h+='<details class="acc"><summary><span class="at">Roční výdaje domácnosti</span><span class="sum num" id="annTot"></span></summary><div class="accbody">'+
     B.ANN.map(function(e){return fieldHtml(e[0],e[1],'Kč/rok',0,'a');}).join('')+
     '<p class="note" style="margin-top:10px">Jednou nebo dvakrát za rok. Částky jsou jen odhad, přepiš je. Odečtou se od toho, co zbývá za rok.</p>'+
-    '<button class="ghost sm" type="button" id="zeroA">Vynulovat</button></div></details>';
+    '<button class="ghost sm" type="button" id="zeroA">Vynulovat</button></div></details></div>';
   h+='<div class="btns"><button class="solid" type="button" id="share"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>Zkopírovat odkaz s mými čísly</button><button class="ghost" type="button" id="demo">Vrátit ukázku</button></div>';
   inEl.innerHTML=h;
 }
