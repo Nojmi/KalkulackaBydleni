@@ -156,12 +156,12 @@ function sankSvg(src,sk,aria){
   if(!src.length||!sk.length)return '<p class="note">Není co zobrazit.</p>';
   var W=620,xL=150,wN=12,xR=420,tot=0;sk.forEach(function(a){tot+=a[1];});
   var sc=300/tot,GAP=6,MINSLOT=36;
-  var y=14,nodes=sk.map(function(a){var nh=Math.max(a[1]*sc,4),sl=Math.max(nh,MINSLOT),o={n:a[0],v:a[1],c:a[2],nh:nh,top:y+(sl-nh)/2,mid:y+sl/2};y+=sl+GAP;return o;});
+  var y=14,nodes=sk.map(function(a){var nh=Math.max(a[1]*sc,4),sl=Math.max(nh,MINSLOT),o={n:a[0],v:a[1],c:a[2],own:a[3],nh:nh,top:y+(sl-nh)/2,mid:y+sl/2};y+=sl+GAP;return o;});
   var H=y-GAP+14;
   var sh=0;src.forEach(function(a){sh+=a[1]*sc;});sh+=(src.length-1)*14;
   var sy=Math.max(14,(H-sh)/2),sn=src.map(function(a){var h=a[1]*sc,o={n:a[0],v:a[1],c:a[2],top:sy,h:h,off:0};sy+=h+14;return o;});
   var rem=src.map(function(a){return a[1];});
-  var rib='',nd='',lb='',inOff=nodes.map(function(){return 0;});
+  var rib='',nd='',lb='',rl='',inOff=nodes.map(function(){return 0;});
   nodes.forEach(function(t,ti){
     var need=t.v;
     for(var si=0;si<src.length&&need>0.001;si++){
@@ -169,7 +169,8 @@ function sankSvg(src,sk,aria){
       var sH=take*sc,tH=take/t.v*t.nh,s0=sn[si].top+sn[si].off,t0=t.top+inOff[ti];
       sn[si].off+=sH;inOff[ti]+=tH;rem[si]-=take;need-=take;
       var m=(xL+wN+xR)/2;
-      rib+='<path d="M'+(xL+wN)+' '+s0.toFixed(1)+'C'+m+' '+s0.toFixed(1)+' '+m+' '+t0.toFixed(1)+' '+xR+' '+t0.toFixed(1)+'L'+xR+' '+(t0+tH).toFixed(1)+'C'+m+' '+(t0+tH).toFixed(1)+' '+m+' '+(s0+sH).toFixed(1)+' '+(xL+wN)+' '+(s0+sH).toFixed(1)+'Z" fill="'+t.c+'" class="rib"><title>'+esc(src[si][0])+' → '+esc(t.n)+': '+kc(take)+'</title></path>';
+      rib+='<path d="M'+(xL+wN)+' '+s0.toFixed(1)+'C'+m+' '+s0.toFixed(1)+' '+m+' '+t0.toFixed(1)+' '+xR+' '+t0.toFixed(1)+'L'+xR+' '+(t0+tH).toFixed(1)+'C'+m+' '+(t0+tH).toFixed(1)+' '+m+' '+(s0+sH).toFixed(1)+' '+(xL+wN)+' '+(s0+sH).toFixed(1)+'Z" fill="'+((src[si][3]&&!t.own)?src[si][2]:t.c)+'" class="rib"><title>'+esc(src[si][0])+' → '+esc(t.n)+': '+kc(take)+'</title></path>';
+      if(src[si][3]&&!t.own){var cy=((s0+sH/2)+(t0+tH/2))/2;rl+='<text class="rl" text-anchor="middle" x="'+(m-5)+'" y="'+(cy+17).toFixed(1)+'">'+esc('Zbytek nájmu → nová hypo')+': '+kc(take)+'</text>';}
     }
     nd+='<rect x="'+xR+'" y="'+t.top.toFixed(1)+'" width="'+wN+'" height="'+t.nh.toFixed(1)+'" rx="2" fill="'+t.c+'"/>';
     lb+='<text x="'+(xR+wN+8)+'" y="'+(t.mid-2).toFixed(1)+'">'+esc(t.n)+'</text><text class="v" x="'+(xR+wN+8)+'" y="'+(t.mid+14).toFixed(1)+'">'+kc(t.v)+'</text>';
@@ -179,15 +180,15 @@ function sankSvg(src,sk,aria){
     var mid=o.top+Math.max(o.h,4)/2;
     lb+='<text text-anchor="end" x="'+(xL-8)+'" y="'+(mid-2).toFixed(1)+'">'+esc(o.n)+'</text><text class="v" text-anchor="end" x="'+(xL-8)+'" y="'+(mid+14).toFixed(1)+'">'+kc(o.v)+'</text>';
   });
-  return '<svg class="sank" viewBox="0 0 '+W+' '+H.toFixed(0)+'" role="img" aria-label="'+esc(aria)+'">'+rib+nd+lb+'</svg>';
+  return '<svg class="sank" viewBox="0 0 '+W+' '+H.toFixed(0)+'" role="img" aria-label="'+esc(aria)+'">'+rib+nd+lb+rl+'</svg>';
 }
 var OLDC='var(--s-rose)';
 /* hlavní diagram: příjem a nájem vlevo, výdaje vpravo; nájem je hned u staré hypotéky */
 function sankMain(x){
   var f=sankP==='y'?12:1,hc='var(--'+({D:'v0',C:'v1',A:'v2',B:'v3'}[sankK])+')';
   var ym=x.yearMonthly*f;
-  var src=[['Čistý nájem',x.rent*f,OLDC],['Příjem',S.income*f,'var(--acc)'],['Chybí',Math.max(0,-ym),'var(--neg)']];
-  var sk=[['Splátka staré hypo',x.oldPay*f,OLDC],['Pojištění staré hypo',x.oldIns*f,OLDC],['Zálohy (starý byt)',x.oldServ*f,OLDC],
+  var src=[['Čistý nájem',x.rent*f,'var(--s-teal)',true],['Příjem',S.income*f,'var(--acc)'],['Chybí',Math.max(0,-ym),'var(--neg)']];
+  var sk=[['Splátka staré hypo',x.oldPay*f,OLDC,true],['Pojištění staré hypo',x.oldIns*f,OLDC,true],['Zálohy (starý byt)',x.oldServ*f,OLDC,true],
     ['Splátka nové hypo',x.pay*f,hc],['Pojištění nové hypo',x.ins*f,hc],['Zálohy (nový byt)',x.serv*f,hc],
     ['Ostatní výdaje',S.other*f,'var(--v0)'],['Roční výdaje',sankP==='y'?ann:ann/12,'var(--mut)'],['Zbývá na spoření',Math.max(0,ym),'var(--acc)']];
   return sankSvg(src,sk,'Rozdělení '+(sankP==='y'?'ročního':'měsíčního')+' příjmu, varianta '+NAMES[sankK]);

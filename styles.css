@@ -205,7 +205,7 @@ tr.sel td,tr.sel th{background:var(--acc-soft)}
 /* ===== wrappers keep the brief's order by default ===== */
 .res{display:flex;flex-direction:column;gap:20px;min-width:0}
 .resA,.resB{display:contents}
-.s-prof{order:1;--ga:prof}.s-bud{order:2;--ga:bud}.s-rok{order:3;--ga:rok}.s-vyd{order:4;--ga:vyd}.s-naj{order:5;--ga:naj}.s-gr{order:6;--ga:gr}.s-sh{order:7;--ga:sh}
+.s-prof{order:1;--ga:prof}.s-bud{order:2;--ga:bud}.s-sank{order:3;--ga:sank}.s-rentsank{order:4;--ga:rsank}.s-rok{order:5;--ga:rok}.s-vyd{order:6;--ga:vyd}.s-naj{order:7;--ga:naj}.s-gr{order:8;--ga:gr}.s-sh{order:9;--ga:sh}
 
 /* ===== wide monitors: use the whole width ===== */
 @media (min-width:1500px){
@@ -222,7 +222,7 @@ tr.sel td,tr.sel th{background:var(--acc-soft)}
   .hrow{grid-template-columns:150px minmax(0,1fr) 120px}
   .wf{grid-template-columns:170px minmax(0,1fr) 100px}
   /* dvousloupcové výsledky */
-  .res{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"prof prof" "bud bud" "rok rok" "vyd vyd" "gr naj" "sh sh"}
+  .res{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"prof prof" "bud bud" "sank sank" "rsank rsank" "rok rok" "vyd vyd" "gr naj" "sh sh"}
   .cols{grid-template-columns:400px minmax(0,1fr)}
   .res .panel{grid-area:var(--ga);order:0}
 }
@@ -343,10 +343,11 @@ fieldset.grp:nth-of-type(6n+6),details.acc:nth-of-type(6n+2){--c:var(--s-rose)}
 .sank{width:100%;height:auto;display:block}
 .sank text{font-size:14px;fill:var(--ink)}
 .sank text.v{font-size:12.5px;fill:var(--mut)}
+.sank text.rl{font-size:11.5px;font-weight:600;fill:var(--ink);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}
 .sank .rib{opacity:.34}.sank .rib:hover{opacity:.6}
 
 @media (max-width:560px){
-  .sank text{font-size:18px}.sank text.v{font-size:15.5px}
+  .sank text{font-size:18px}.sank text.v{font-size:15.5px}.sank text.rl{font-size:15px}
   .vsel{display:grid;grid-template-columns:1fr 1fr;width:100%}
   .vsel .seg-i{justify-content:center;padding:0 6px}
 }
