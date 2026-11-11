@@ -163,29 +163,37 @@ function sankSvg(src,sk,aria){
   var sh=0;src.forEach(function(a){sh+=a[1]*sc;});sh+=(src.length-1)*14;
   var sy=Math.max(14,(H-sh)/2),sn=src.map(function(a){var h=a[1]*sc,o={n:a[0],v:a[1],c:a[2],top:sy,h:h,off:0};sy+=h+14;return o;});
   var rem=src.map(function(a){return a[1];});
-  var rib='',nd='',lb='',rl='',inOff=nodes.map(function(){return 0;});
+  var rib='',nd='',lb='',inOff=nodes.map(function(){return 0;});
   nodes.forEach(function(t,ti){
-    var need=t.v;
+    var need=t.v,ext=0;
     for(var si=0;si<src.length&&need>0.001;si++){
       var take=Math.min(rem[si],need);if(take<=0.001)continue;
       var sH=take*sc,tH=take/t.v*t.nh,s0=sn[si].top+sn[si].off,t0=t.top+inOff[ti];
       sn[si].off+=sH;inOff[ti]+=tH;rem[si]-=take;need-=take;
       var m=(xL+wN+xR)/2;
       rib+='<path d="M'+(xL+wN)+' '+s0.toFixed(1)+'C'+m+' '+s0.toFixed(1)+' '+m+' '+t0.toFixed(1)+' '+xR+' '+t0.toFixed(1)+'L'+xR+' '+(t0+tH).toFixed(1)+'C'+m+' '+(t0+tH).toFixed(1)+' '+m+' '+(s0+sH).toFixed(1)+' '+(xL+wN)+' '+(s0+sH).toFixed(1)+'Z" fill="'+((src[si][3]&&!t.own)?src[si][2]:t.c)+'" class="rib"><title>'+esc(src[si][0])+' → '+esc(t.n)+': '+kc(take)+'</title></path>';
-      if(src[si][3]&&!t.own){var cy=((s0+sH/2)+(t0+tH/2))/2;rl+='<text class="rl" text-anchor="middle" x="'+(m-5)+'" y="'+(cy+17).toFixed(1)+'">'+esc('Zbytek nájmu → nová hypo')+': '+kc(take)+'</text>';}
+      if(src[si][3]&&!t.own)ext+=take;
     }
     nd+='<rect x="'+xR+'" y="'+t.top.toFixed(1)+'" width="'+wN+'" height="'+t.nh.toFixed(1)+'" rx="2" fill="'+t.c+'"/>';
-    lb+='<text x="'+(xR+wN+8)+'" y="'+(t.mid-2).toFixed(1)+'">'+esc(t.n)+'</text><text class="v" x="'+(xR+wN+8)+'" y="'+(t.mid+14).toFixed(1)+'">'+kc(t.v)+'</text>';
+    lb+='<text x="'+(xR+wN+8)+'" y="'+(t.mid-2).toFixed(1)+'">'+esc(t.n)+'</text><text class="v" x="'+(xR+wN+8)+'" y="'+(t.mid+14).toFixed(1)+'">'+kc(t.v)+'</text>'+(ext>0.5?'<text class="v ex" x="'+(xR+wN+8)+'" y="'+(t.mid+30).toFixed(1)+'">z toho z nájmu '+kc(ext)+'</text>':'');
   });
   sn.forEach(function(o){
     nd+='<rect x="'+xL+'" y="'+o.top.toFixed(1)+'" width="'+wN+'" height="'+Math.max(o.h,4).toFixed(1)+'" rx="2" fill="'+o.c+'"/>';
     var mid=o.top+Math.max(o.h,4)/2;
     lb+='<text text-anchor="end" x="'+(xL-8)+'" y="'+(mid-2).toFixed(1)+'">'+esc(o.n)+'</text><text class="v" text-anchor="end" x="'+(xL-8)+'" y="'+(mid+14).toFixed(1)+'">'+kc(o.v)+'</text>';
   });
-  return '<svg class="sank" viewBox="0 0 '+W+' '+H.toFixed(0)+'" role="img" aria-label="'+esc(aria)+'">'+rib+nd+lb+rl+'</svg>';
+  return '<svg class="sank" viewBox="0 0 '+W+' '+H.toFixed(0)+'" role="img" aria-label="'+esc(aria)+'">'+rib+nd+lb+'</svg>';
 }
 var OLDC='var(--s-rose)';
 /* jeden spojitý tok: nájem nejdřív pokryje starý byt (hypotéka, SVJ, opravy, daň), zbytek přeteče k nové hypotéce */
+function sankRent(x){
+  var f=sankP==='y'?12:1,ti=S.taxInfo,g=S.rentGross*f;
+  var sk=[['Splátka staré hypo',x.oldPay*f,OLDC],['Pojištění staré hypo',x.oldIns*f,OLDC],['Fond oprav, SVJ',S.owner*f,'var(--v0)'],['Opravy a drobné',S.repairs*f,'var(--v0)'],['Daň z nájmu',S.tax*f,'var(--v1)'],['Výměna nájemníka, nemov. daň',ti.extraM*f,'var(--v0)']];
+  var out=0;sk.forEach(function(a){out+=a[1];});
+  var d=g-out;
+  sk.push(['Zbývá z nájmu',Math.max(0,d),'var(--acc)']);
+  return {svg:sankSvg([['Nájem',g,'var(--s-teal)'],['Doplácíš ze svého',Math.max(0,-d),'var(--neg)']],sk,'Pronájem starého bytu: příjem a výdaje'),diff:d,gross:g};
+}
 function sankMain(x){
   var f=sankP==='y'?12:1,hc='var(--'+({D:'v0',C:'v1',A:'v2',B:'v3'}[sankK])+')',ym=x.yearMonthly*f,ti=S.taxInfo,rent=x.rent>0.5;
   var src=[];
@@ -235,7 +243,7 @@ function sankMain(x){
   sm('rozdíl oproti dnes',function(x,k){return k==='D'?null:x.left-R.D.left;});
   sm('rozdíl oproti prodeji bytu',function(x,k){return (k==='D'||k==='A')?null:x.left-R.A.left;});
   t+='</tbody></table>';
-  var sx=R[sankK];
+  var sx=R[sankK],rn=sankRent(R.B);
   function segBtns(attr,items,cur,lab){return '<div class="seg vsel" role="group" aria-label="'+lab+'">'+items.map(function(i){return '<button class="seg-i" type="button" '+attr+'="'+i[0]+'" aria-pressed="'+(i[0]===cur)+'">'+i[1]+'</button>';}).join('')+'</div>';}
   var perBtns=segBtns('data-sp',[['m','Měsíčně'],['y','Ročně']],sankP,'Období');
   var rtxt='';
@@ -245,6 +253,8 @@ function sankMain(x){
   }
   var sSank=panel('s-sank','h-sank','Kam jdou peníze: '+esc(P.name),'Jak se rozdělí '+(sankP==='y'?'roční':'měsíční')+' příjem. Šířka pruhu odpovídá částce.'+(sx.rent>0.5?' Nájem nejdřív pokryje starý byt, zbytek přeteče k nové hypotéce.':''),
     '<div class="vrow">'+perBtns+segBtns('data-sk',ORDER.map(function(k){return [k,NAMES[k]];}),sankK,'Varianta')+'</div><div class="sankwrap">'+sankMain(sx)+'</div>'+rtxt);
+  var sRentS=panel('s-rentsank','h-rentsank','Pronájem starého bytu','Jen příjem a výdaje starého bytu ve variantě Koupit a pronajímat. '+(sankP==='y'?'Za rok.':'Měsíčně.'),
+    rn.gross<=0?'<p class="note">Nemáš zadaný žádný nájem.</p>':'<div class="sankwrap">'+rn.svg+'</div><p class="note" style="margin-top:8px">'+(rn.diff>=0?'Nájem pokryje hypotéku i náklady a zbývá <b>'+kc(rn.diff)+'</b>'+(sankP==='y'?' za rok':' měsíčně')+'.':'Nájem na hypotéku a náklady nestačí, <b>'+kc(-rn.diff)+'</b>'+(sankP==='y'?' za rok':' měsíčně')+' doplácíš ze svého.')+' Daň z nájmu je počítaná způsobem '+['','A (paušál)','B (skutečné výdaje)','C (skutečné výdaje a odpisy)'][S.taxInfo.mode]+'.</p>');
   var sBud=panel('s-bud','h-bud','Měsíční rozpočet: '+esc(P.name),'Čtyři varianty vedle sebe, částky v Kč.',tw('Měsíční rozpočet čtyř variant',t));
 
   /* roční přehled */
@@ -363,7 +373,7 @@ function sankMain(x){
     '<div class="verdict"><h3>Můj názor</h3>'+op.map(function(x){return '<p>'+x+'</p>';}).join('')+
     '<p class="note">Je to pohled z čísel, která jsi zadal, a nejsem finanční poradce. Výsledek závisí na odhadech výdajů, úroku po refixaci a obsazenosti bytu. Přesné parametry ověř u banky.</p></div>');
 
-  outEl.innerHTML='<div class="resA">'+sProf+sBud+sSank+sVyd+sNaj+'</div><div class="resB">'+sRok+sGr+sSh+'</div>';
+  outEl.innerHTML='<div class="resA">'+sProf+sBud+sSank+sRentS+sVyd+sNaj+'</div><div class="resB">'+sRok+sGr+sSh+'</div>';
   var et=document.getElementById('expTot'),at=document.getElementById('annTot');
   if(et)et.textContent=kc(B.expTotal());
   if(at)at.textContent=kc(B.annTotal());
