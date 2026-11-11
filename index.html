@@ -165,17 +165,20 @@ function sankSvg(src,sk,aria){
   var rem=src.map(function(a){return a[1];});
   var rib='',nd='',lb='',rl='',inOff=nodes.map(function(){return 0;});
   nodes.forEach(function(t,ti){
-    var need=t.v,ext=0;
+    var need=t.v,ext=0,extH=0;
     for(var si=0;si<src.length&&need>0.001;si++){
       var take=Math.min(rem[si],need);if(take<=0.001)continue;
       var sH=take*sc,tH=take/t.v*t.nh,s0=sn[si].top+sn[si].off,t0=t.top+inOff[ti];
       sn[si].off+=sH;inOff[ti]+=tH;rem[si]-=take;need-=take;
       var m=(xL+wN+xR)/2;
       rib+='<path d="M'+(xL+wN)+' '+s0.toFixed(1)+'C'+m+' '+s0.toFixed(1)+' '+m+' '+t0.toFixed(1)+' '+xR+' '+t0.toFixed(1)+'L'+xR+' '+(t0+tH).toFixed(1)+'C'+m+' '+(t0+tH).toFixed(1)+' '+m+' '+(s0+sH).toFixed(1)+' '+(xL+wN)+' '+(s0+sH).toFixed(1)+'Z" fill="'+((src[si][3]&&!t.own)?src[si][2]:t.c)+'" class="rib"><title>'+esc(src[si][0])+' → '+esc(t.n)+': '+kc(take)+'</title></path>';
-      if(src[si][3]&&!t.own){ext+=take;rl+='<text class="rl" text-anchor="end" x="'+(xR-6)+'" y="'+(t0-6).toFixed(1)+'">z nájmu '+kc(take)+'</text>';}
+      if(src[si][3]&&!t.own){ext+=take;extH+=tH;}
     }
     nd+='<rect x="'+xR+'" y="'+t.top.toFixed(1)+'" width="'+wN+'" height="'+t.nh.toFixed(1)+'" rx="2" fill="'+t.c+'"/>';
-    lb+='<text x="'+(xR+wN+8)+'" y="'+(t.mid-2).toFixed(1)+'">'+esc(t.n)+'</text><text class="v" x="'+(xR+wN+8)+'" y="'+(t.mid+14).toFixed(1)+'">'+kc(t.v)+'</text>'+(ext>0.5?'<text class="v ex" x="'+(xR+wN+8)+'" y="'+(t.mid+30).toFixed(1)+'">z toho z nájmu '+kc(ext)+'</text>':'');
+    var ty=t.mid-2;
+    if(ext>0.5){var eh=Math.max(extH,4);nd+='<rect x="'+xR+'" y="'+t.top.toFixed(1)+'" width="'+wN+'" height="'+eh.toFixed(1)+'" rx="2" fill="color-mix(in srgb,var(--s-teal) 55%,var(--surface))"/>';
+      var ey=t.top+eh/2+5;rl+='<text class="rl" x="'+(xR+wN+8)+'" y="'+ey.toFixed(1)+'">z nájmu '+kc(ext)+'</text>';ty=Math.max(ty,ey+24);}
+    lb+='<text x="'+(xR+wN+8)+'" y="'+ty.toFixed(1)+'">'+esc(t.n)+'</text><text class="v" x="'+(xR+wN+8)+'" y="'+(ty+16).toFixed(1)+'">'+kc(t.v)+'</text>'+(ext>0.5?'<text class="v ex" x="'+(xR+wN+8)+'" y="'+(ty+32).toFixed(1)+'">z toho z nájmu '+kc(ext)+'</text>':'');
   });
   sn.forEach(function(o){
     nd+='<rect x="'+xL+'" y="'+o.top.toFixed(1)+'" width="'+wN+'" height="'+Math.max(o.h,4).toFixed(1)+'" rx="2" fill="'+o.c+'"/>';
