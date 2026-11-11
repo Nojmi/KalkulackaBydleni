@@ -444,7 +444,7 @@ function sankMain(x){
     '<div class="verdict"><h3>Můj názor</h3>'+op.map(function(x){return '<p>'+x+'</p>';}).join('')+
     '<p class="note">Je to pohled z čísel, která jsi zadal, a nejsem finanční poradce. Výsledek závisí na odhadech výdajů, úroku po refixaci a obsazenosti bytu. Přesné parametry ověř u banky.</p></div>');
 
-  outEl.innerHTML='<div class="resA">'+sProf+sBud+sSank+sRentS+sSpine+sVyd+sNaj+'</div><div class="resB">'+sRok+sGr+sSh+'</div>';
+  outEl.innerHTML='<div class="resA">'+sProf+sBud+sSank+sRentS+sSpine+sVyd+sNaj+'</div><div class="resB">'+sRok+sSh+'</div>';
   var et=document.getElementById('expTot'),at=document.getElementById('annTot');
   if(et)et.textContent=kc(B.expTotal());
   if(at)at.textContent=kc(B.annTotal());
