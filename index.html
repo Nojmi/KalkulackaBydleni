@@ -175,7 +175,7 @@ function sankSvg(src,sk,aria){
       if(src[si][3]&&!t.own)ext+=take;
     }
     nd+='<rect x="'+xR+'" y="'+t.top.toFixed(1)+'" width="'+wN+'" height="'+t.nh.toFixed(1)+'" rx="2" fill="'+t.c+'"/>';
-    lb+='<text x="'+(xR+wN+8)+'" y="'+(t.mid-2).toFixed(1)+'">'+esc(t.n)+'</text><text class="v" x="'+(xR+wN+8)+'" y="'+(t.mid+14).toFixed(1)+'">'+kc(t.v)+'</text>'+(ext>0.5?'<text class="v ex" x="'+(xR+wN+8)+'" y="'+(t.mid+30).toFixed(1)+'">z toho z nájmu '+kc(ext)+'</text>':'');
+    lb+='<text x="'+(xR+wN+8)+'" y="'+(t.mid-2).toFixed(1)+'">'+esc(t.n)+'</text><text class="v" x="'+(xR+wN+8)+'" y="'+(t.mid+14).toFixed(1)+'">'+kc(t.v)+'</text>';
   });
   sn.forEach(function(o){
     nd+='<rect x="'+xL+'" y="'+o.top.toFixed(1)+'" width="'+wN+'" height="'+Math.max(o.h,4).toFixed(1)+'" rx="2" fill="'+o.c+'"/>';
@@ -201,8 +201,12 @@ function sankMain(x){
   src.push(['Příjem',S.income*f,'var(--acc)'],['Chybí',Math.max(0,-ym),'var(--neg)']);
   var sk=[['Splátka staré hypo',x.oldPay*f,OLDC,true],['Pojištění staré hypo',x.oldIns*f,OLDC,true]];
   if(rent)sk.push(['Fond oprav, SVJ',S.owner*f,'var(--v0)',true],['Opravy a drobné',S.repairs*f,'var(--v0)',true],['Daň z nájmu',S.tax*f,'var(--v1)',true],['Výměna nájemníka, nemov. daň',ti.extraM*f,'var(--v0)',true]);
-  sk.push(['Zálohy (starý byt)',x.oldServ*f,OLDC,true],
-    ['Splátka nové hypo',x.pay*f,hc],['Pojištění nové hypo',x.ins*f,hc],['Zálohy (nový byt)',x.serv*f,hc],
+  sk.push(['Zálohy (starý byt)',x.oldServ*f,OLDC,true]);
+  var rr=0;
+  if(rent){rr=Math.min(x.pay*f,Math.max(0,(S.rentGross-x.oldPay-x.oldIns-S.owner-S.repairs-S.tax-ti.extraM-x.oldServ)*f));}
+  if(rr>0.5)sk.push(['Nová hypo: z nájmu',rr,'var(--s-teal)'],['Nová hypo: z příjmu',x.pay*f-rr,hc]);
+  else sk.push(['Splátka nové hypo',x.pay*f,hc]);
+  sk.push(['Pojištění nové hypo',x.ins*f,hc],['Zálohy (nový byt)',x.serv*f,hc],
     ['Ostatní výdaje',S.other*f,'var(--v0)'],['Roční výdaje',sankP==='y'?ann:ann/12,'var(--mut)'],['Zbývá na spoření',Math.max(0,ym),'var(--acc)']);
   return sankSvg(src,sk,'Rozdělení '+(sankP==='y'?'ročního':'měsíčního')+' příjmu, varianta '+NAMES[sankK]);
 }
