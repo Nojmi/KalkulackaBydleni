@@ -60,7 +60,15 @@ var BG=[
   ['svjTotal','Předpis záloh SVJ za byt celkem','Kč/měs',7292],
   ['owner','z toho platí vlastník (fond oprav, správa, pojištění domu)','Kč/měs',3984],
   ['repairs','Opravy a drobné náklady','Kč/měs',1000],
-  ['tax','Daň z nájmu (odhad)','Kč/měs',3452]
+  ['taxMode','Jak se počítá daň z nájmu','',3,0,[[1,'A: paušál 30 % výdajů'],[2,'B: skutečné výdaje'],[3,'C: skutečné výdaje + odpisy']]],
+  ['taxYear','Za který rok pronájmu se daň počítá','',1,0,[[1,'1. rok (odpis 1,4 %)'],[2,'další roky (odpis 2 %)']]],
+  ['acqPrice','Pořizovací cena starého bytu (základ odpisů)','Kč',4000000],
+  ['landVal','z toho pozemek (neodepisuje se)','Kč',0],
+  ['interestYr','Roční úrok z hypotéky pro daň (0 = spočítá se sám)','Kč/rok',0],
+  ['real','Započítat i realističtější položky','',0,0,[[0,'Ne'],[1,'Ano']]],
+  ['vacantM','Prázdné měsíce za rok (jen když je zapnuto)','měs.',1],
+  ['tenantCost','Výměna nájemníka a provize (jen když je zapnuto)','Kč/rok',10000],
+  ['propTax','Daň z nemovitých věcí (jen když je zapnuto)','Kč/rok',1000]
  ]}
 ];
 /* měsíční výdaje domácnosti mimo bydlení (výchozí rozdělení je jen odhad, přepiš podle účtu) */
@@ -186,6 +194,25 @@ function pmt(P,rate,years){
   return P*r/(1-Math.pow(1+r,-n));
 }
 
+/* úrok z hypotéky za zvolený rok pronájmu (anuita po refixaci) */
+function autoInterest(bal,ratePct,pay,yr){
+  var r=ratePct/1200,tot=0,b=bal,i;
+  for(i=0;i<12*yr&&b>0;i++){var it=b*r;if(i>=12*(yr-1))tot+=it;b=Math.max(0,b-(pay-it));}
+  return tot;
+}
+/* daň z nájmu 15 %: A paušál 30 %, B skutečné výdaje, C skutečné výdaje + odpisy budovy (skupina 6: 1,4 % v 1. roce, pak 2 %) */
+function rentTax(s,balFix,oldPay,mode){
+  mode=mode||s.taxMode;
+  var eff=Math.max(0,Math.min(12,s.occ-(s.real?s.vacantM:0)));
+  var rentY=s.rent*eff,extraY=s.real?s.tenantCost+s.propTax:0;
+  var yr=s.taxYear===2?2:1;
+  var interest=s.interestYr>0?s.interestYr:autoInterest(balFix,s.rateAfter,oldPay,yr);
+  var svjY=s.owner*12,insY=s.oldInsAfter*12,repY=s.repairs*12;
+  var dep=mode===3?Math.max(0,s.acqPrice-s.landVal)*(yr===1?0.014:0.02):0;
+  var costs=mode===1?rentY*0.3:interest+svjY+insY+repY+extraY+dep;
+  var base=Math.max(0,rentY-costs),taxY=base*0.15;
+  return {mode:mode,eff:eff,rentY:rentY,interest:interest,svjY:svjY,insY:insY,repY:repY,extraY:extraY,dep:dep,costs:costs,base:base,taxY:taxY,tax:taxY/12,extraM:extraY/12};
+}
 /* výpočet jedné nemovitosti (profilu) */
 function calc(p){
   var s={},k;for(k in st.base)s[k]=st.base[k];for(k in p.v)s[k]=p.v[k];
@@ -201,7 +228,8 @@ function calc(p){
   var loanA=Math.max(0,need-cash-s.usedA);
   var loanB=Math.max(0,need-s.usedB);
   var payA=pmt(loanA,s.rateA,s.term),payB=pmt(loanB,s.rateB,s.term);
-  var rentNet=s.rent*s.occ/12-s.owner-s.repairs-s.tax;
+  var T=rentTax(s,balFix,oldPay);s.tax=T.tax;s.taxInfo=T;s.rentGross=T.rentY/12;
+  var rentNet=T.rentY/12-s.owner-s.repairs-T.tax-T.extraM;
   var A={loan:loanA,pay:payA,ins:s.insA,serv:s.newServ,oldPay:0,oldIns:0,oldServ:0,rent:0};
   var B={loan:loanB,pay:payB,ins:s.insB,serv:s.newServ,oldPay:oldPay,oldIns:s.oldInsAfter,oldServ:0,rent:rentNet};
   var C={loan:0,pay:0,ins:0,serv:0,oldPay:oldPay,oldIns:s.oldInsAfter,oldServ:s.oldServAfter,rent:0};
@@ -272,7 +300,7 @@ function shareUrl(page){
 w.addEventListener('hashchange',function(){if(/^#[dp]=/.test(location.hash))location.reload();});
 
 load();fixAll();
-w.BYD={RENO:RENO,RIDS:RIDS,renoTotal:renoTotal,fixReno:fixReno,st:st,PF:PF,BG:BG,EXP:EXP,ANN:ANN,BDEF:BDEF,PIDS:PIDS,BIDS:BIDS,cur:cur,calc:calc,save:save,expTotal:expTotal,annTotal:annTotal,
+w.BYD={rentTax:rentTax,RENO:RENO,RIDS:RIDS,renoTotal:renoTotal,fixReno:fixReno,st:st,PF:PF,BG:BG,EXP:EXP,ANN:ANN,BDEF:BDEF,PIDS:PIDS,BIDS:BIDS,cur:cur,calc:calc,save:save,expTotal:expTotal,annTotal:annTotal,
   kc:kc,fmtIn:fmtIn,parse:parse,sgn:sgn,esc:esc,pmt:pmt,
   select:select,addProfile:addProfile,dupProfile:dupProfile,delProfile:delProfile,resetAll:resetAll,shareUrl:shareUrl,
   mountNav:mountNav,mountChips:mountChips,onChange:onChange,fire:fire};

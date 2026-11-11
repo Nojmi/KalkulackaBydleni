@@ -106,8 +106,10 @@ function render(){
     return T('Splátka staré hypotéky',rows);
   }
   function rentTip(){
-    var rM=S.rent*S.occ/12;
-    return T('Příjem z pronájmu po nákladech',[['Nájem '+kc(S.rent)+' × '+S.occ+' z 12 měsíců',kc(rM)],['− poplatky SVJ, které platí vlastník',kc(-S.owner)],['− opravy a drobné náklady',kc(-S.repairs)],['− daň z nájmu',kc(-S.tax)],['Čistý příjem za měsíc',kc(rM-S.owner-S.repairs-S.tax),'sum']]);
+    var rM=S.rentGross,ti=S.taxInfo,rows=[['Nájem '+kc(S.rent)+' × '+ti.eff+' z 12 měsíců',kc(rM)],['− poplatky SVJ, které platí vlastník',kc(-S.owner)],['− opravy a drobné náklady',kc(-S.repairs)]];
+    if(ti.extraM)rows.push(['− výměna nájemníka, daň z nemovitých',kc(-ti.extraM)]);
+    rows.push(['− daň z nájmu',kc(-S.tax)],['Čistý příjem za měsíc',kc(rM-S.owner-S.repairs-ti.extraM-S.tax),'sum']);
+    return T('Příjem z pronájmu po nákladech',rows);
   }
   var bestK=R.A.yearLeft>=R.B.yearLeft?'A':'B';
   var best=R.A.left===R.B.left?'':(R.A.left>R.B.left?'A':'B');
@@ -183,24 +185,18 @@ function sankSvg(src,sk,aria){
   return '<svg class="sank" viewBox="0 0 '+W+' '+H.toFixed(0)+'" role="img" aria-label="'+esc(aria)+'">'+rib+nd+lb+rl+'</svg>';
 }
 var OLDC='var(--s-rose)';
-/* hlavní diagram: příjem a nájem vlevo, výdaje vpravo; nájem je hned u staré hypotéky */
+/* jeden spojitý tok: nájem nejdřív pokryje starý byt (hypotéka, SVJ, opravy, daň), zbytek přeteče k nové hypotéce */
 function sankMain(x){
-  var f=sankP==='y'?12:1,hc='var(--'+({D:'v0',C:'v1',A:'v2',B:'v3'}[sankK])+')';
-  var ym=x.yearMonthly*f;
-  var src=[['Čistý nájem',x.rent*f,'var(--s-teal)',true],['Příjem',S.income*f,'var(--acc)'],['Chybí',Math.max(0,-ym),'var(--neg)']];
-  var sk=[['Splátka staré hypo',x.oldPay*f,OLDC,true],['Pojištění staré hypo',x.oldIns*f,OLDC,true],['Zálohy (starý byt)',x.oldServ*f,OLDC,true],
+  var f=sankP==='y'?12:1,hc='var(--'+({D:'v0',C:'v1',A:'v2',B:'v3'}[sankK])+')',ym=x.yearMonthly*f,ti=S.taxInfo,rent=x.rent>0.5;
+  var src=[];
+  if(rent)src.push(['Nájem',S.rentGross*f,'var(--s-teal)',true]);
+  src.push(['Příjem',S.income*f,'var(--acc)'],['Chybí',Math.max(0,-ym),'var(--neg)']);
+  var sk=[['Splátka staré hypo',x.oldPay*f,OLDC,true],['Pojištění staré hypo',x.oldIns*f,OLDC,true]];
+  if(rent)sk.push(['Fond oprav, SVJ',S.owner*f,'var(--v0)',true],['Opravy a drobné',S.repairs*f,'var(--v0)',true],['Daň z nájmu',S.tax*f,'var(--v1)',true],['Výměna nájemníka, nemov. daň',ti.extraM*f,'var(--v0)',true]);
+  sk.push(['Zálohy (starý byt)',x.oldServ*f,OLDC,true],
     ['Splátka nové hypo',x.pay*f,hc],['Pojištění nové hypo',x.ins*f,hc],['Zálohy (nový byt)',x.serv*f,hc],
-    ['Ostatní výdaje',S.other*f,'var(--v0)'],['Roční výdaje',sankP==='y'?ann:ann/12,'var(--mut)'],['Zbývá na spoření',Math.max(0,ym),'var(--acc)']];
+    ['Ostatní výdaje',S.other*f,'var(--v0)'],['Roční výdaje',sankP==='y'?ann:ann/12,'var(--mut)'],['Zbývá na spoření',Math.max(0,ym),'var(--acc)']);
   return sankSvg(src,sk,'Rozdělení '+(sankP==='y'?'ročního':'měsíčního')+' příjmu, varianta '+NAMES[sankK]);
-}
-/* třetí diagram: jen pronájem staré nemovitosti (varianta Koupit a pronajímat) */
-function sankRent(x){
-  var f=sankP==='y'?12:1,g=S.rent*S.occ/12*f;
-  var sk=[['Splátka staré hypo',x.oldPay*f,OLDC],['Pojištění staré hypo',x.oldIns*f,OLDC],['Fond oprav, SVJ',S.owner*f,'var(--v0)'],['Opravy a drobné',S.repairs*f,'var(--v0)'],['Daň z nájmu',S.tax*f,'var(--v1)']];
-  var out=0;sk.forEach(function(a){out+=a[1];});
-  var d=g-out;
-  sk.push(['Zbývá z nájmu',Math.max(0,d),'var(--acc)']);
-  return {svg:sankSvg([['Nájem',g,'var(--s-teal)'],['Doplácíš ze svého',Math.max(0,-d),'var(--neg)']],sk,'Pronájem starého bytu: příjem a výdaje'),gross:g,out:out,diff:d};
 }
   /* měsíční rozpočet */
   var t='<table>'+head('')+'<tbody>';
@@ -239,14 +235,16 @@ function sankRent(x){
   sm('rozdíl oproti dnes',function(x,k){return k==='D'?null:x.left-R.D.left;});
   sm('rozdíl oproti prodeji bytu',function(x,k){return (k==='D'||k==='A')?null:x.left-R.A.left;});
   t+='</tbody></table>';
-  var sx=R[sankK],rn=sankRent(R.B);
+  var sx=R[sankK];
   function segBtns(attr,items,cur,lab){return '<div class="seg vsel" role="group" aria-label="'+lab+'">'+items.map(function(i){return '<button class="seg-i" type="button" '+attr+'="'+i[0]+'" aria-pressed="'+(i[0]===cur)+'">'+i[1]+'</button>';}).join('')+'</div>';}
   var perBtns=segBtns('data-sp',[['m','Měsíčně'],['y','Ročně']],sankP,'Období');
-  var sSank=panel('s-sank','h-sank','Kam jdou peníze: '+esc(P.name),'Jak se rozdělí '+(sankP==='y'?'roční':'měsíční')+' příjem. Šířka pruhu odpovídá částce. Nájem je hned u staré hypotéky, kterou pokrývá.',
-    '<div class="vrow">'+perBtns+segBtns('data-sk',ORDER.map(function(k){return [k,NAMES[k]];}),sankK,'Varianta')+'</div><div class="sankwrap">'+sankMain(sx)+'</div>');
-  var rtxt=rn.gross<=0?'Nemáš zadaný žádný nájem.':(rn.diff>=0?'Nájem pokryje hypotéku i náklady a zbývá <b>'+kc(rn.diff)+'</b>'+(sankP==='y'?' za rok':' měsíčně')+'.':'Nájem na hypotéku a náklady nestačí, doplácíš <b>'+kc(-rn.diff)+'</b>'+(sankP==='y'?' za rok':' měsíčně')+' ze svého.');
-  var sRentS=panel('s-rentsank','h-rentsank','Pronájem starého bytu','Jen příjem a výdaje starého bytu ve variantě Koupit a pronajímat. '+(sankP==='y'?'Za rok.':'Měsíčně.'),
-    '<div class="sankwrap">'+rn.svg+'</div><p class="note" style="margin-top:8px">'+rtxt+' Splátka staré hypotéky je po refinancování.</p>');
+  var rtxt='';
+  if(sx.rent>0.5){
+    var dd=(S.rentGross-sx.oldPay-sx.oldIns-S.owner-S.repairs-S.tax-S.taxInfo.extraM)*(sankP==='y'?12:1),per=sankP==='y'?' za rok':' měsíčně';
+    rtxt='<p class="note" style="margin-top:8px">'+(dd>=0?'Nájem pokryje starou hypotéku i všechny náklady na byt a <b>'+kc(dd)+'</b>'+per+' přeteče k nové hypotéce.':'Nájem na starou hypotéku a náklady nestačí, <b>'+kc(-dd)+'</b>'+per+' doplácíš ze svého příjmu.')+' Daň z nájmu je počítaná způsobem '+['','A (paušál)','B (skutečné výdaje)','C (skutečné výdaje a odpisy)'][S.taxInfo.mode]+'.</p>';
+  }
+  var sSank=panel('s-sank','h-sank','Kam jdou peníze: '+esc(P.name),'Jak se rozdělí '+(sankP==='y'?'roční':'měsíční')+' příjem. Šířka pruhu odpovídá částce.'+(sx.rent>0.5?' Nájem nejdřív pokryje starý byt, zbytek přeteče k nové hypotéce.':''),
+    '<div class="vrow">'+perBtns+segBtns('data-sk',ORDER.map(function(k){return [k,NAMES[k]];}),sankK,'Varianta')+'</div><div class="sankwrap">'+sankMain(sx)+'</div>'+rtxt);
   var sBud=panel('s-bud','h-bud','Měsíční rozpočet: '+esc(P.name),'Čtyři varianty vedle sebe, částky v Kč.',tw('Měsíční rozpočet čtyř variant',t));
 
   /* roční přehled */
@@ -283,7 +281,7 @@ function sankRent(x){
     '<p class="note">Výdaje domácnosti celkem (bez bydlení): '+kc(S.other+ann/12)+' měsíčně, '+kc(S.other*12+ann)+' ročně. Roční výdaje se do měsíčních rozpočtů počítají rozpočítané na dvanáct měsíců. Spoření a investice tu nejsou, jsou součástí toho, co zbývá.</p>');
 
   /* pronájem */
-  var rM=S.rent*S.occ/12,rY=S.rent*S.occ/12*12,opM=S.owner+S.repairs+S.tax,netBefore=rM-opM,mort=R.oldPay+S.oldInsAfter,netAfter=netBefore-mort;
+  var rM=S.rentGross,rY=rM*12,ti=S.taxInfo,opM=S.owner+S.repairs+S.tax+ti.extraM,netBefore=rM-opM,mort=R.oldPay+S.oldInsAfter,netAfter=netBefore-mort;
   var base=S.rent>0?S.rent:1,cum=S.rent;
   function wf(l,amt,isTot,after){
     var left,width;
@@ -293,14 +291,25 @@ function sankRent(x){
   }
   var tenSvj=Math.max(0,S.svjTotal-S.owner);
   var w='<div class="wf tot"><span class="t">Nájem za měsíc</span><div class="track" aria-hidden="true"><div class="fill" style="left:0%;width:100%"></div></div><span class="num">'+kc(S.rent)+'</span></div>'+
-    wf('Neobsazenost (obsazenost '+S.occ+' měsíců z 12)',S.rent-rM,false)+wf('Poplatky SVJ, které platí vlastník',S.owner,false)+wf('Opravy a drobné náklady',S.repairs,false)+wf('Daň z nájmu (odhad)',S.tax,false)+
+    wf('Neobsazenost (obsazeno '+ti.eff+' měsíců z 12)',S.rent-rM,false)+wf('Poplatky SVJ, které platí vlastník',S.owner,false)+wf('Opravy a drobné náklady',S.repairs,false)+(ti.extraM?wf('Výměna nájemníka, daň z nemovitých věcí',ti.extraM,false):'')+wf('Daň z nájmu ('+['','A','B','C'][ti.mode]+')',S.tax,false)+
     wf('Příjem z pronájmu po nákladech',0,true,netBefore);
   function r2(l,v,cls){var c=cls?(v<0?'neg':''):'';return '<tr'+(cls?' class="'+cls+'"':'')+'><th scope="row">'+l+'</th><td class="num '+c+'">'+kc(v)+'</td><td class="num '+c+'">'+kc(v*12)+'</td></tr>';}
   var tb='<table class="nomin"><thead><tr><th>Hypotéka starého bytu po refixaci</th><th class="num">Měsíčně</th><th class="num">Ročně</th></tr></thead><tbody>'+
     r2('Splátka hypotéky',-R.oldPay)+r2('Pojištění hypotéky',-S.oldInsAfter)+r2('Příjem z pronájmu po nákladech',netBefore)+
     r2(netAfter>=0?'Pronájem ti měsíčně přispívá':'Na pronájem měsíčně doplácíš',netAfter,'hl')+'</tbody></table>';
+  var tx=[1,2,3].map(function(m){return B.rentTax(S,R.balFix,R.oldPay,m);});
+  function trow(l,fn,cls){return '<tr'+(cls?' class="'+cls+'"':'')+'><th scope="row">'+l+'</th>'+tx.map(function(x){return '<td class="num">'+fn(x)+'</td>';}).join('')+'</tr>';}
+  var ttb='<table class="nomin"><thead><tr><th>Daň z nájmu za rok ('+(S.taxYear===2?'další roky':'1. rok')+')</th>'+[1,2,3].map(function(m){return '<th class="num">'+['A paušál','B skutečné','C + odpisy'][m-1]+(S.taxInfo.mode===m?' ✓':'')+'</th>';}).join('')+'</tr></thead><tbody>'+
+    trow('Příjem z nájmu',function(x){return kc(x.rentY);})+
+    trow('Uznané výdaje',function(x){return kc(-x.costs);})+
+    trow('z toho úrok z hypotéky',function(x){return x.mode===1?'–':kc(-x.interest);})+
+    trow('z toho odpisy',function(x){return x.dep?kc(-x.dep):'–';})+
+    trow('Základ daně',function(x){return kc(x.base);})+
+    trow('Daň 15 % za rok',function(x){return kc(x.taxY);},'strong')+
+    trow('Daň měsíčně',function(x){return kc(x.tax);},'hl')+'</tbody></table>';
+  var tnote='<p class="note">Úrok z hypotéky: '+kc(S.taxInfo.interest)+' za rok ('+(S.interestYr>0?'zadáno':'dopočteno z hypotéky po refixaci')+'). Odpisy: budova '+kc(Math.max(0,S.acqPrice-S.landVal))+' × '+(S.taxYear===2?'2 %':'1,4 %')+'. Fond oprav je daňově uznatelný jen ve výši skutečně čerpané SVJ. Ověř si výpočet u daňového poradce.</p>';
   var sNaj=panel('s-naj','h-naj','Pronájem starého bytu','Od měsíčního nájmu k tomu, co skutečně zbyde.',
-    w+'<div class="sec-gap">'+tw('Pronájem a hypotéka starého bytu',tb)+'</div><p class="note">Zálohy SVJ celkem '+kc(S.svjTotal)+' měsíčně: vlastník platí '+kc(S.owner)+' (je v nákladech), nájemník nad rámec nájmu '+kc(tenSvj)+' (tvým rozpočtem neprochází). Zálohy a energie ve starém bytě platí nájemník. Pronájem je stejný pro všechny nemovitosti.</p>');
+    w+'<div class="sec-gap">'+tw('Pronájem a hypotéka starého bytu',tb)+'</div><div class="sec-gap">'+tw('Daň z nájmu: tři způsoby',ttb)+'</div>'+tnote+'<p class="note">Zálohy SVJ celkem '+kc(S.svjTotal)+' měsíčně: vlastník platí '+kc(S.owner)+' (je v nákladech), nájemník nad rámec nájmu '+kc(tenSvj)+' (tvým rozpočtem neprochází). Zálohy a energie ve starém bytě platí nájemník. Pronájem je stejný pro všechny nemovitosti.</p>');
 
   /* graf zbývá měsíčně */
   var lv=ORDER.map(function(k){return R[k].left;}),lmx=Math.max.apply(null,lv.concat([0])),lmn=Math.min.apply(null,lv.concat([0])),lrg=(lmx-lmn)||1;
@@ -354,7 +363,7 @@ function sankRent(x){
     '<div class="verdict"><h3>Můj názor</h3>'+op.map(function(x){return '<p>'+x+'</p>';}).join('')+
     '<p class="note">Je to pohled z čísel, která jsi zadal, a nejsem finanční poradce. Výsledek závisí na odhadech výdajů, úroku po refixaci a obsazenosti bytu. Přesné parametry ověř u banky.</p></div>');
 
-  outEl.innerHTML='<div class="resA">'+sProf+sBud+sSank+sRentS+sVyd+sNaj+'</div><div class="resB">'+sRok+sGr+sSh+'</div>';
+  outEl.innerHTML='<div class="resA">'+sProf+sBud+sSank+sVyd+sNaj+'</div><div class="resB">'+sRok+sGr+sSh+'</div>';
   var et=document.getElementById('expTot'),at=document.getElementById('annTot');
   if(et)et.textContent=kc(B.expTotal());
   if(at)at.textContent=kc(B.annTotal());
@@ -364,6 +373,10 @@ function sankRent(x){
 function fieldHtml(id,label,unit,dec,scope){
   var fid='f-'+scope+'-'+id;
   return '<div class="field"><label for="'+fid+'">'+label+'</label><div class="inp"><input id="'+fid+'" data-s="'+scope+'" data-k="'+id+'" type="text" inputmode="decimal" autocomplete="off" data-d="'+(dec||0)+'"><span class="u">'+unit+'</span></div></div>';
+}
+function selHtml(id,label,opts,scope){
+  var fid='f-'+scope+'-'+id;
+  return '<div class="field"><label for="'+fid+'">'+label+'</label><div class="inp"><select id="'+fid+'" class="sel" data-s="'+scope+'" data-k="'+id+'" data-d="0">'+opts.map(function(o){return '<option value="'+o[0]+'">'+o[1]+'</option>';}).join('')+'</select></div></div>';
 }
 function renoHtml(f){
   return '<div class="field"><label for="f-p-reno">'+f[1]+'</label><div class="inp"><input id="f-p-reno" data-s="p" data-k="reno" data-d="0" type="text" readonly tabindex="-1" aria-readonly="true"><span class="u">Kč</span></div></div>'+
@@ -377,7 +390,7 @@ function build(){
     B.PF.map(function(f){return f[0]==='reno'?renoHtml(f):fieldHtml(f[0],f[1],f[2],f[3],'p');}).join('')+
     '<button class="ghost sm" type="button" id="zero" style="margin-top:10px">Vynulovat čísla profilu</button></fieldset>';
   B.BG.forEach(function(g){
-    h+='<fieldset class="grp"><legend>'+g.t+'</legend>'+g.f.map(function(f){return fieldHtml(f[0],f[1],f[2],f[4],'b');}).join('')+'</fieldset>';
+    h+='<fieldset class="grp"><legend>'+g.t+'</legend>'+g.f.map(function(f){return f[5]?selHtml(f[0],f[1],f[5],'b'):fieldHtml(f[0],f[1],f[2],f[4],'b');}).join('')+'</fieldset>';
   });
   h+='</div>';
   h+='<details class="acc"><summary><span class="at">Měsíční výdaje domácnosti</span><span class="sum num" id="expTot"></span></summary><div class="accbody">'+
@@ -396,7 +409,7 @@ function fill(){
   var P=B.cur();
   document.getElementById('pname').value=P.name;
   document.getElementById('pnote').value=P.note;
-  inEl.querySelectorAll('input[data-k]').forEach(function(el){
+  inEl.querySelectorAll('input[data-k],select[data-k]').forEach(function(el){
     el.value=fmtIn(store(el.dataset.s)[el.dataset.k],+el.dataset.d);
   });
 }

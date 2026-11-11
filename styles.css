@@ -359,3 +359,4 @@ fieldset.grp:nth-of-type(6n+6),details.acc:nth-of-type(6n+2){--c:var(--s-rose)}
 .tw tr.key>*{font-weight:700;background:color-mix(in srgb,var(--acc) 6%,transparent)}
 .tw tr.key>:first-child{box-shadow:inset 3px 0 0 var(--acc)}
 .tw tr.key.hl>*{background:var(--acc-soft)}
+.field select.sel{width:100%;min-height:48px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--raised);color:var(--ink);font:inherit;font-weight:600;font-size:14px}
