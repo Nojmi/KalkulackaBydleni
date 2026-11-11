@@ -177,7 +177,7 @@ function sankSvg(src,sk,aria){
     nd+='<rect x="'+xR+'" y="'+t.top.toFixed(1)+'" width="'+wN+'" height="'+t.nh.toFixed(1)+'" rx="2" fill="'+t.c+'"/>';
     var ty=t.mid-2;
     if(ext>0.5){var eh=Math.max(extH,4);nd+='<rect x="'+xR+'" y="'+t.top.toFixed(1)+'" width="'+wN+'" height="'+eh.toFixed(1)+'" rx="2" fill="color-mix(in srgb,var(--s-teal) 55%,var(--surface))"/>';
-      var ey=t.top+eh/2+5;rl+='<text class="rl" x="'+(xR+wN+8)+'" y="'+ey.toFixed(1)+'">z nájmu '+kc(ext)+'</text>';ty=Math.max(ty,ey+24);}
+      var ey=t.top+eh/2+5;rl+='<text x="'+(xR+wN+8)+'" y="'+ey.toFixed(1)+'">Z nájmu '+kc(ext)+'</text>';ty=Math.max(ty,ey+24);}
     lb+='<text x="'+(xR+wN+8)+'" y="'+ty.toFixed(1)+'">'+esc(t.n)+'</text><text class="v" x="'+(xR+wN+8)+'" y="'+(ty+16).toFixed(1)+'">'+kc(t.v)+'</text>'+(ext>0.5?'<text class="v ex" x="'+(xR+wN+8)+'" y="'+(ty+32).toFixed(1)+'">z toho z nájmu '+kc(ext)+'</text>':'');
   });
   sn.forEach(function(o){
