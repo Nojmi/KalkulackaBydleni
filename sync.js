@@ -75,11 +75,12 @@ function importFile(){
 }
 
 /* ---------- cloud ---------- */
+function withTimeout(p,ms){return new Promise(function(res,rej){var t=setTimeout(function(){rej(new Error('Cloud neodpovídá (časový limit). Zkontroluj internet, blokátor reklam nebo firemní síť.'));},ms);p.then(function(v){clearTimeout(t);res(v);},function(e){clearTimeout(t);rej(e);});});}
 function ref(){return db.collection(DOC[0]).doc(DOC[1]);}
 function fmt(ms){try{return new Date(ms).toLocaleString('cs-CZ');}catch(e){return '';}}
 function push(){
   var snap=snapshot(),rev=Date.now();
-  return ref().set({data:snap,rev:rev,by:(navigator.userAgent||'').slice(0,80)}).then(function(){
+  return withTimeout(ref().set({data:snap,rev:rev,by:(navigator.userAgent||'').slice(0,80)}),15000).then(function(){
     setMeta({rev:rev,dirty:false});status('uloženo '+new Date().toLocaleTimeString('cs-CZ',{hour:'2-digit',minute:'2-digit'}),'ok');
   });
 }
@@ -91,7 +92,7 @@ function pull(remote){
 function reconcile(manual){
   if(!user||busy)return Promise.resolve();
   busy=true;status('synchronizuji…');
-  return ref().get().then(function(d){
+  return withTimeout(ref().get({source:'server'}),15000).then(function(d){
     var meta=getMeta(),local=snapshot();
     if(!d.exists){return hasData(local)?push():(status('připojeno, cloud je prázdný','ok'));}
     var remote=d.data();
@@ -103,8 +104,8 @@ function reconcile(manual){
     if(useCloud)return pull(remote);
     backup('cloud',remote.data||{});return push();
   }).catch(function(e){
-    status('chyba synchronizace','err');console.error('sync',e);
-    if(manual)alert('Synchronizace selhala: '+(e&&e.message||e));
+    status('chyba: '+((e&&e.code)||'sync'),'err');console.error('sync',e);
+    if(manual||true)alert('Synchronizace selhala: '+(e&&e.message||e));
   }).then(function(){busy=false;});
 }
 function schedule(){
@@ -133,7 +134,7 @@ function init(){
    .then(function(){return loadScript(SDK+'firebase-auth-compat.js');})
    .then(function(){return loadScript(SDK+'firebase-firestore-compat.js');})
    .then(function(){
-     firebase.initializeApp(CFG);auth=firebase.auth();db=firebase.firestore();
+     firebase.initializeApp(CFG);auth=firebase.auth();db=firebase.firestore();try{db.settings({experimentalAutoDetectLongPolling:true,merge:true});}catch(e){}
      auth.onAuthStateChanged(function(u){
        user=u;
        if(u){reconcile(false);}else{status('nepřihlášeno – klikni','');}
