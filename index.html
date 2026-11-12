@@ -209,7 +209,7 @@ function sankStages(nodes,links,W,H){
   var lo=0,hi=100;for(var it=0;it<40;it++){var mid2=(lo+hi)/2;if(need(mid2)<=H-20)lo=mid2;else hi=mid2;}
   var k=lo;
   var colX=function(c){return xL+(xR-xL-NW)*c/cols;};
-  list.forEach(function(cn,c){var tot=(cn.length-1)*PAD;cn.forEach(function(n){n.h=Math.max(n.v*k,2);n.sl=Math.max(n.v*k,MS);tot+=n.sl;});var y=10+(H-20-tot)/2;
+  list.forEach(function(cn,c){var tot=(cn.length-1)*PAD;cn.forEach(function(n){n.h=Math.max(n.v*k,2);n.sl=Math.max(n.v*k,MS);tot+=n.sl;});var y=c===cols?10+(H-20-tot)/2:H-10-tot;
     cn.forEach(function(n){n.x=colX(c);n.y=y+(n.sl-n.h)/2;y+=n.sl+PAD;});});
   nodes.forEach(function(n){
     n.ls.sort(function(a,b){return a.t.y-b.t.y;});var o=0;n.ls.forEach(function(l){l.h=l.v*k;l.sy=n.y+o;o+=l.h;});
