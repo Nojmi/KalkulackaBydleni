@@ -28,9 +28,9 @@ function backup(tag,o){
 var chip,pop;
 function css(){
   var s=document.createElement('style');
-  s.textContent='#syncChip{position:fixed;right:12px;bottom:12px;z-index:50;font:12px/1.3 system-ui,sans-serif;background:var(--surface,#fff);color:var(--text,#222);border:1px solid var(--line,#bbb);border-radius:999px;padding:6px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)}'+
-  '#syncChip.err{border-color:#c33;color:#c33}#syncChip.ok{border-color:#2a8}'+
-  '#syncPop{position:fixed;right:12px;bottom:50px;z-index:50;font:13px/1.4 system-ui,sans-serif;background:var(--surface,#fff);color:var(--text,#222);border:1px solid var(--line,#bbb);border-radius:10px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,.2);display:none;max-width:280px}'+
+  s.textContent='#syncChip{position:fixed;right:12px;bottom:12px;z-index:50;font:12px/1.3 system-ui,sans-serif;background:var(--surface,#fff);color:var(--ink,#222);border:1px solid var(--line,#bbb);border-radius:999px;padding:6px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)}'+
+  '#syncChip.err{border-color:#c33;color:#c33}#syncChip.ok{border-color:var(--acc,#2a8)}#syncChip{font-weight:600;border-color:var(--acc,#2a8)}'+
+  '#syncPop{position:fixed;right:12px;bottom:50px;z-index:50;font:13px/1.4 system-ui,sans-serif;background:var(--surface,#fff);color:var(--ink,#222);border:1px solid var(--line,#bbb);border-radius:10px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,.2);display:none;max-width:280px}'+
   '#syncPop button{display:block;width:100%;margin-top:6px;padding:6px 8px;border:1px solid var(--line,#bbb);border-radius:6px;background:transparent;color:inherit;cursor:pointer;font:inherit}';
   document.head.appendChild(s);
   chip=document.createElement('div');chip.id='syncChip';chip.textContent='☁ Sync: načítám…';
