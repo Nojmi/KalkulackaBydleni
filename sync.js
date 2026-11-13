@@ -97,7 +97,7 @@ function reconcile(manual){
     if(!d.exists){return hasData(local)?push():(status('připojeno, cloud je prázdný','ok'));}
     var remote=d.data();
     if(same(local,remote.data||{})){setMeta({rev:remote.rev,dirty:false});status('synchronizováno','ok');return;}
-    if(meta.rev===remote.rev){return meta.dirty||manual?push():status('synchronizováno','ok');}
+    if(meta.rev===remote.rev){return push();} /* cloud beze změny od poslední synchronizace, ale místní data se liší = místní změna (např. přidaný profil přes odkaz) */
     /* cloud se změnil od posledního setkání */
     if(!hasData(local)||(meta.rev&&!meta.dirty))return pull(remote);
     var useCloud=confirm('V cloudu jsou jiná data (uložena '+fmt(remote.rev)+') než v tomto prohlížeči.\n\nOK = použít data z cloudu (tato místní se zazálohují v prohlížeči)\nZrušit = ponechat místní a přepsat jimi cloud (cloudová se zazálohují v prohlížeči)');
