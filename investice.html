@@ -588,7 +588,7 @@ function renderResult(){
   ht+='</tbody></table></div>';
   h+='<section class="panel"><div class="ph"><div><h2>Co kdyby: výnos akcií a růst cen bytu</h2><p class="hint">Rozdíl byt − investice po '+T+' letech, '+vlab+'. Řádky: hrubý výnos akcií a ETF ročně. Sloupce: růst ceny bytu ročně. Rámeček je tvůj odhad.</p></div></div><div class="lg"><span><i class="mk v1"></i>+ vyhrává byt</span><span><i class="mk v2"></i>− vyhrává investice</span></div>'+ht+'<p class="note">Byt vyhrává v '+wins+' z '+cnt+' kombinací. Čím víc se výsledek mění při malé změně předpokladu, tím méně se na něj dá spolehnout.</p></section>';
   /* tok */
-  var cols=[1,p.fix+1,10,T].filter(function(y,i,a){return y>=1&&y<=T&&a.indexOf(y)===i;}).sort(function(a,b){return a-b;}).slice(0,4);
+  var cols=[1,Math.ceil(p.fix)+1,10,T].filter(function(y,i,a){return y>=1&&y<=T&&a.indexOf(y)===i;}).sort(function(a,b){return a-b;}).slice(0,4);
   var crow=function(l,fn,cls){return '<tr'+(cls?' class="'+cls+'"':'')+'><th scope="row">'+l+'</th>'+cols.map(function(y){return '<td class="num">'+kc(fn(R.yrs[y-1]))+'</td>';}).join('')+'</tr>';};
   var tab='<div class="tw"><table class="nomin"><thead><tr><th>Za rok, Kč daného roku</th>'+cols.map(function(y){return '<th class="num">Rok '+y+'</th>';}).join('')+'</tr></thead><tbody>'
    +crow('Nájem inkasovaný',function(a){return a.coll;},'strong')
