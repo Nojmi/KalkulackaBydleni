@@ -273,6 +273,53 @@ function render(){
   sb+='<tr><td>Růst cen, při kterém se pořadí otočí</td>'+[5,10,15].map(function(y){var b2=breakEven(y*12);return '<td class="num">'+(b2===null?'nikdy':pc(b2,1))+'</td>';}).join('')+'</tr>';
   h+=panel('h-s','Co když ceny porostou jinak','Rozdíl čistého jmění Byt 1 − Byt 2 podle ročního růstu cen. Kladné číslo = lépe Byt 1 ('+esc(pa.name)+'), záporné = lépe Byt 2 ('+esc(pb.name)+').',
    tw('Citlivost na růst cen','<table><thead><tr><th>Růst cen bytů ročně</th><th class="num">za 5 let</th><th class="num">za 10 let</th><th class="num">za 15 let</th></tr></thead><tbody>'+sb+'</tbody></table>')+'<p class="note">Cena a plocha bytu se mění stejně o stejné procento. Skutečný vývoj konkrétního domu, lokality a energetické třídy se může lišit od průměru.</p>');
+  /* ---------- celkové zhodnocení ---------- */
+  var STRESS=130860,at=function(q,y){return q.nw[y*12];};
+  var dY=[5,10,15].map(function(y){return at(A,y)-at(B,y);});
+  var rates=[3.5,4,4.5,5,5.5],base10=dY[1]>=0?1:-1;
+  var holdsRate=rates.every(function(r2){var o2=Object.assign({},L,{rate2:r2}),x=sim(pa,L.scen,o2),y=sim(pb,L.scen,o2);return ((x.nw[120]-y.nw[120])>=0?1:-1)===base10;});
+  var bg=breakEven(120),aWins=dY[1]>=0,win=aWins?pa:pb,lose=aWins?pb:pa,nW=aWins?pa.name:pb.name,nL=aWins?pb.name:pa.name;
+  var disc10=sim({v:Object.assign({},lose.v,{price:lose.v.price-1000000})},L.scen,L).nw[120]-at(aWins?B:A,10);
+  var inf=function(q,i){return {dsti:(i.pay+i.ins)/i.income*100,ltv:i.loan/i.price*100,out:i.other+i.ann/12+i.pay+i.ins+i.serv-i.rent+(i.oldNow||0),cash0:q.cash[0]};};
+  var qa=inf(A,I),qb=inf(B,J);
+  function half(q){var sh=q.out-0.5*(q===qa?I.income:J.income);return sh<=0?Infinity:q.cash0/sh;}
+  function mat(q,i){return STRESS-(q.out-0+0);}
+  var ha=half(qa),hb=half(qb),ma=STRESS-qa.out,mb=STRESS-qb.out;
+  var mo=function(v){return isFinite(v)?fmtIn(Math.round(v),0)+NB+'měs.':'neomezeně';};
+  var better=function(x,y,hi){return Math.abs(x-y)<1e-9?'':((x>y)===hi?'Byt 1':'Byt 2');};
+  var T=function(lab,x,y,w){return '<tr><td>'+lab+'</td><td class="num">'+x+'</td><td class="num">'+y+'</td><td class="num"'+(w?' style="font-weight:700;color:var(--acc)"':'')+'>'+(w||'')+'</td></tr>';};
+  var rows2=
+   T('Čisté jmění za 5 let',mil(at(A,5)),mil(at(B,5)),better(at(A,5),at(B,5),true))+
+   T('Čisté jmění za 10 let',mil(at(A,10)),mil(at(B,10)),better(at(A,10),at(B,10),true))+
+   T('Čisté jmění za 15 let',mil(at(A,15)),mil(at(B,15)),better(at(A,15),at(B,15),true))+
+   T('Splátka a pojištění z čistého příjmu',pc(qa.dsti,1),pc(qb.dsti,1),better(qa.dsti,qb.dsti,false))+
+   T('Úvěr jako podíl z ceny',pc(qa.ltv,1),pc(qb.ltv,1),better(qa.ltv,qb.ltv,false))+
+   T('Zbývá měsíčně / šetření ročně',kc(I.left)+' / '+kc(I.year),kc(J.left)+' / '+kc(J.year),better(I.year,J.year,true))+
+   T('Rezerva při poklesu příjmu na polovinu vydrží',mo(ha),mo(hb),better(isFinite(ha)?ha:1e9,isFinite(hb)?hb:1e9,true))+
+   T('Měsíční výsledek při příjmu '+kc(STRESS)+' (mateřská), po ročních výdajích',kc(ma),kc(mb),better(ma,mb,true))+
+   T('Nejnižší hotovost za 15 let',kc(A.min),kc(B.min),better(A.min,B.min,true))+
+   T('Plocha bytu / cena za m²',(I.area>0?fmtIn(I.area,1)+NB+'m²':'—')+' / '+(I.area>0?kc(I.price/I.area):'—'),(J.area>0?fmtIn(J.area,1)+NB+'m²':'—')+' / '+(J.area>0?kc(J.price/J.area):'—'),'');
+  var sec1='<tr><th colspan="4" style="padding-top:14px">Odolnost výsledku</th></tr>'+
+   T('Pořadí drží při sazbě po fixaci 3,5 až 5,5 % (za 10 let)',holdsRate?'ano':'ne','',holdsRate?'':'záleží na sazbě')+
+   T('Růst cen bytů, při kterém se pořadí otočí (za 10 let)',bg===null?'nikdy':pc(bg,1),'počítáte s '+pc(L.g,1),'')+
+   T('Co přinese sleva 1 mil. Kč z ceny bytu '+esc(nL)+' (za 10 let)',sd(disc10),'','');
+  var op=[];
+  var gap10=Math.abs(dY[1]),w10=Math.max(at(A,10),at(B,10)),pp1=Math.abs(diffAt(L.g+1,120)-dY[1]);
+  op.push('<b>Finančně vychází lépe '+esc(nW)+'</b>. Za 10 let o '+mil(gap10)+', za 15 let o '+mil(Math.abs(dY[2]))+'. Pořadí '+(holdsRate?'drží při každé zkoušené sazbě po fixaci (3,5 až 5,5 %)':'se při některé sazbě po fixaci mění')+(bg===null?'.':' a do růstu cen bytů '+pc(bg,1)+' ročně (výchozí odhad '+pc(L.g,1)+')')+'.');
+  op.push('<b>Ten rozdíl není velký.</b> Je to asi '+pc(gap10/w10*100,1)+' čistého jmění. Smazal by ho růst cen bytů o ≈'+fmtIn(pp1>0?gap10/pp1:0,1)+' procentního bodu rychlejší, než počítáš (každý procentní bod posune rozdíl o '+mil(pp1)+' za 10 let). Čísla ukazují, že '+esc(nL)+' není finančně výhodnější, ale nerozhodují ostře.');
+  op.push('<b>Rozhodovat má bezpečnost a prostor.</b> Splátka s pojištěním je u '+esc(pa.name)+' '+pc(qa.dsti,1)+' čistého příjmu, u '+esc(pb.name)+' '+pc(qb.dsti,1)+'. Čím blíž k 40 %, tím menší je rezerva a tím víc záleží na tom, co banka schválí. Při poklesu příjmu na polovinu vydrží rezerva '+mo(ha)+' resp. '+mo(hb).replace(/\.$/,'')+'. Při příjmu jako na mateřské ('+kc(STRESS)+') vychází po ročních výdajích '+(ma>=0?'+':'−')+kc(Math.abs(ma))+' resp. '+(mb>=0?'+':'−')+kc(Math.abs(mb))+' měsíčně.');
+  if(I.area>0&&J.area>0&&Math.abs(I.area-J.area)>0.05){var dAa=Math.abs(I.area-J.area),dPa=Math.abs(I.price-J.price);
+    op.push('<b>Cena za prostor je férová.</b> Každý metr navíc u většího bytu stojí '+kc(dPa/dAa)+'/m², tedy '+((dPa/dAa)<Math.min(I.price/I.area,J.price/J.area)?'méně':'víc')+' než průměr menšího bytu. Dražší je to jen v tom, že ty metry platíš ze splátky (asi '+kc(Math.abs(I.pay-J.pay)/dAa)+' měsíčně za metr). Otázka tedy není, jestli je cena adekvátní, ale jestli ty metry potřebuješ.');}
+  var isPair=function(x,y){return Math.abs(I.area-x)<0.6&&Math.abs(J.area-y)<0.6||Math.abs(I.area-y)<0.6&&Math.abs(J.area-x)<0.6;};
+  if(isPair(121.6,104)){
+    op.push('<b>U mezonetu zůstávají nevyřešené věci, které model nevidí:</b> zástava ČSOB 4,77 mil. Kč na jednotce, majetkový režim spoluvlastníků (cizí právo), smlouva o kotelně (platba firmě Prometheus), stav fondu oprav po výdajích 15,8 mil. Kč a třída energetické náročnosti (inzerát G, ty uvádíš C, PENB zatím nemáme). Bez odpovědí bych nepodával nabídku. Podrobnosti jsou v dokumentu profilu mezonetu.');
+    op.push('<b>U menšího bytu ověř plochu a stav:</b> makléř uvádí 110 m² včetně sklepa, skutečný byt je asi 104 m². Dále nefunkční podlahové topení ve větší koupelně po rekonstrukci 2018, terasa 63 m² bez připojené vody a elektřiny a údržba terasy a střechy.');
+    op.push('<b>Vyjednávání:</b> mezonet je podle inzerátu na trhu od května 2025, tedy asi 18 měsíců. To je argument pro slevu. Každý 1 mil. Kč slevy z ceny '+esc(nL)+' zlepší čisté jmění za 10 let o '+mil(disc10)+'. Model oceňuje byty jen cenou, ne metry, takže vyrovnání bytů není otázka slevy, ale prostoru.');
+  }
+  op.push('<b>Moje doporučení:</b> pokud potřebuješ prostor navíc a banka schválí splátku, je mezonet za férovou cenu za metr, ale s nevyřešenými právními body a malou finanční výhodou. Pokud ne, je menší byt bezpečnější volba: nižší úvěr, nižší splátka, větší rezerva a stejnou cenu za m². Než se rozhodneš, ověř u banky DSTI (poměr splátky k příjmu), vyřeš body výše a vyzkoušej si v panelu předpokladů sazbu po fixaci a růst cen.');
+  h+=panel('h-z','Celkové zhodnocení a můj názor','Shrnutí kritérií a čísel z celé stránky. Můj názor je orientační, ne finanční poradenství.',
+   tw('Souhrn kritérií','<table><thead><tr><th>Kritérium</th><th class="num">'+esc(pa.name)+'</th><th class="num">'+esc(pb.name)+'</th><th class="num">Lépe</th></tr></thead><tbody>'+rows2+sec1+'</tbody></table>')+
+   '<div class="verdict sec-gap"><h3>Můj názor (Claude, '+'25. 11. 2026'+')</h3><ul>'+op.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div><p class="note">Nejsem finanční poradce ani odhadce. Model používá konstantní růst cen a sazby a nepočítá daně z výnosů, poplatek za předčasné splacení a stav bytů.</p>');
   res.innerHTML=h;bindChart(ch);bindChart(ch2);
 }
 res.addEventListener('change',function(e){var id=e.target.id;if(id==='s1')L.p1=+e.target.value;else if(id==='s2')L.p2=+e.target.value;else if(id==='s3')L.scen=e.target.value;else return;saveL();render();});
