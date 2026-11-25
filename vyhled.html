@@ -141,7 +141,7 @@ function pick(){
   var ps=st.profiles;if(!P(L.p1))L.p1=BY.cur().id;
   if(!P(L.p2)||L.p2===L.p1){var o2=ps.filter(function(p){return p.id!==L.p1;})[0];L.p2=o2?o2.id:L.p1;}
 }
-function runAll(o){return {a:sim(P(L.p1),L.scen,o),b:sim(P(L.p2),L.scen,o),z:sim(P(L.p1),'C',o)};}
+function runAll(o){return {a:sim(P(L.p1),L.scen,o),b:sim(P(L.p2),L.scen,o)};}
 function cls(o,g){return Object.assign({},o,{g:g});}
 function diffAt(g,t){var o=cls(L,g),x=sim(P(L.p1),L.scen,o),y=sim(P(L.p2),L.scen,o);return x.nw[t]-y.nw[t];}
 function breakEven(t){var lo=-10,hi=20,fl=diffAt(lo,t),fh=diffAt(hi,t);if(fl*fh>0)return null;for(var i=0;i<40;i++){var m=(lo+hi)/2,f=diffAt(m,t);if(f*fl>0)lo=m;else hi=m;}return (lo+hi)/2;}
@@ -189,32 +189,31 @@ function mk(k,n){return '<span class="vh"><span class="mk" aria-hidden="true" st
 
 function render(){
   pick();saveL();
-  var pa=P(L.p1),pb=P(L.p2),hz=L.HZ,t=hz*12,R=runAll(L),nm={a:pa.name,b:pb.name,z:'Zůstat v dnešním bytě'};
+  var pa=P(L.p1),pb=P(L.p2),hz=L.HZ,t=hz*12,R=runAll(L),nm={a:pa.name,b:pb.name};
   var sc=L.scen==='A'?'Starý byt prodáme':'Starý byt pronajmeme';
   var opt=function(sel){return st.profiles.map(function(p){return '<option value="'+p.id+'"'+(p.id===sel?' selected':'')+'>'+esc(p.name)+' ('+kc(p.v.price)+')</option>';}).join('');};
   var h=panel('h-v','Co porovnáváme','Dva byty, které si vyberete, a co se stane se starým bytem. Čísla se berou ze základní kalkulačky (příjem, výdaje, hypotéka, úspory).',
    '<div class="sel3"><div><label for="s1">Byt 1</label><select id="s1">'+opt(L.p1)+'</select></div><div><label for="s2">Byt 2</label><select id="s2">'+opt(L.p2)+'</select></div><div><label for="s3">Starý byt</label><select id="s3"><option value="A"'+(L.scen==='A'?' selected':'')+'>Prodáme ho</option><option value="B"'+(L.scen==='B'?' selected':'')+'>Pronajmeme ho</option></select></div></div>'+
    '<div class="hz" role="group" aria-label="Horizont">'+[5,10,15].map(function(y){return '<button type="button" data-hz="'+y+'" aria-pressed="'+(y===hz)+'">Za '+y+' let</button>';}).join('')+'</div>');
-  var A=R.a,B=R.b,Z=R.z,dd=A.nw[t]-B.nw[t],best=dd>=0?'a':'b',loser=dd>=0?'b':'a',diff=Math.abs(dd);
+  var A=R.a,B=R.b,dd=A.nw[t]-B.nw[t],best=dd>=0?'a':'b',loser=dd>=0?'b':'a',diff=Math.abs(dd);
   var card=function(k,t2,v,sub,win){return '<div class="kc'+(win?' win':'')+'"><div class="t">'+(k?mk(k,t2):esc(t2))+'</div><div class="v'+ng(v)+'">'+mil(v)+'</div><div class="s">'+sub+'</div></div>';};
   h+=panel('h-k','Čisté jmění za '+hz+' let','Hodnota bytů plus hotovost a investice minus dluhy. Bez nákladů na prodej.',
-   '<div class="kp">'+card('a',pa.name,A.nw[t],sd(A.nw[t]-Z.nw[t])+' proti zůstání',best==='a')+card('b',pb.name,B.nw[t],sd(B.nw[t]-Z.nw[t])+' proti zůstání',best==='b')+card('z',nm.z,Z.nw[t],'bez stěhování, bez nákupu',false)+'</div>');
+   '<div class="kp">'+card('a',pa.name,A.nw[t],'nový úvěr '+mil(A.loan0),best==='a')+card('b',pb.name,B.nw[t],'nový úvěr '+mil(B.loan0),best==='b')+card('','Rozdíl (Byt 1 − Byt 2)',dd,dd>=0?'lépe '+esc(nm.a):'lépe '+esc(nm.b),false)+'</div>');
   var be=breakEven(t),g1=diffAt(L.g+1,t)-dd;
   var li=[];
   li.push('Za '+hz+' let vychází lépe <b>'+esc(nm[best])+'</b>, o <b>'+mil(diff)+'</b> čistého jmění více než '+esc(nm[loser])+'.');
-  li.push('Oproti zůstání v dnešním bytě: '+esc(nm.a)+' <b>'+sd(A.nw[t]-Z.nw[t])+'</b>, '+esc(nm.b)+' <b>'+sd(B.nw[t]-Z.nw[t])+'</b>.'+((A.nw[t]<Z.nw[t]&&B.nw[t]<Z.nw[t])?' Při těchto předpokladech by se stěhování finančně nevyplatilo, platíte za větší bydlení nižším jměním.':''));
   if(be===null)li.push('Pořadí bytů se nezmění při žádném růstu cen v rozsahu −10 až +20 % ročně.');
   else{var hi=(A.val[0]>B.val[0]);li.push('Pořadí se otočí při růstu cen kolem <b>'+pc(be,1)+'</b> ročně (počítáte s '+pc(L.g,1)+'). '+(hi?esc(nm.a):esc(nm.b))+' je dražší a vyplatí se jen při vyšším růstu.');}
   li.push('Citlivost: každý 1 procentní bod růstu cen za rok změní rozdíl mezi byty o <b>'+sd(g1)+'</b> za '+hz+' let. Největší nejistotou je právě růst cen, ne splátka.');
   [['a',pa.name],['b',pb.name]].forEach(function(x){var q=R[x[0]];if(q.neg!==null)li.push('<span class="neg">Pozor:</span> u bytu '+esc(x[1])+' dojdou volné peníze už za '+fmtIn(Math.round(q.neg/12*10)/10,1)+' roku, dál by domácnost žila na dluh na účtu.');else if(q.min<300000)li.push('Pozor: u bytu '+esc(x[1])+' klesne rezerva na '+mil(q.min)+' (za '+fmtIn(Math.round(q.minT/12*10)/10,1)+' roku), to je velmi málo.');});
   h+='<div class="verdict" style="margin:0"><h3>Co z toho plyne</h3><ul>'+li.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div>';
-  var ch=lineChart('chart',[{k:'a',name:nm.a,get:function(t){return A.nw[t];}},{k:'b',name:nm.b,get:function(t){return B.nw[t];}},{k:'z',name:nm.z,get:function(t){return Z.nw[t];}}],hz,false);
+  var ch=lineChart('chart',[{k:'a',name:nm.a,get:function(t){return A.nw[t];}},{k:'b',name:nm.b,get:function(t){return B.nw[t];}}],hz,false);
   h+=panel('h-c','Vývoj čistého jmění v čase','Svislá čára je zvolený horizont. Najeďte myší pro hodnoty.',
-   '<div class="chartbox"><div class="legend">'+mk('a',nm.a)+mk('b',nm.b)+mk('z',nm.z)+'</div><p class="note" style="margin:0 0 8px">V milionech Kč. Počátek je koupa 1. 3. 2027, v nule je zohledněn nákup a náklady na stěhování. Do konce fixace běží stará hypotéka za dnešní sazbu.</p>'+ch.svg+'<div class="ctip" id="chartt"></div></div>');
-  var ch2=lineChart('chart2',[{k:'a',name:nm.a,get:function(t){return A.nw[t]-Z.nw[t];}},{k:'b',name:nm.b,get:function(t){return B.nw[t]-Z.nw[t];}}],hz,true);ch2.signed=true;
-  h+=panel('h-c2','Kolik stojí (nebo vynese) stěhování','Čisté jmění každého bytu minus čisté jmění při zůstání v dnešním bytě. Pod nulou je to dražší než zůstat. Tady je dobře vidět mezera mezi byty.',
-   '<div class="chartbox"><div class="legend">'+mk('a',nm.a)+mk('b',nm.b)+'</div><p class="note" style="margin:0 0 8px">V milionech Kč. Zůstání nezahrnuje, že dnešní byt je menší: rozdíl je cena za větší bydlení.</p>'+ch2.svg+'<div class="ctip" id="chart2t"></div></div>');
-  var rows=[['Hodnota nového bytu',function(q){return q.val[t];}],['Hodnota starého bytu (jen když zůstává)',function(q){return q.valOld[t];}],['Hotovost a investice',function(q){return q.cash[t];}],['Dluh z nového úvěru',function(q){return -q.dNew[t];}],['Dluh ze staré hypotéky',function(q){return -q.dOld[t];}]];
+   '<div class="chartbox"><div class="legend">'+mk('a',nm.a)+mk('b',nm.b)+'</div><p class="note" style="margin:0 0 8px">V milionech Kč. Počátek je koupa 1. 3. 2027, v nule je zohledněn nákup a náklady na stěhování. Do konce fixace běží stará hypotéka za dnešní sazbu.</p>'+ch.svg+'<div class="ctip" id="chartt"></div></div>');
+  var ch2=lineChart('chart2',[{k:'a',name:'Byt 1 − Byt 2',get:function(t){return A.nw[t]-B.nw[t];}}],hz,true);ch2.signed=true;
+  h+=panel('h-c2','Rozdíl mezi byty v čase','Čisté jmění Bytu 1 minus Bytu 2. Nad nulou je lépe '+esc(nm.a)+', pod nulou '+esc(nm.b)+'. Tady je dobře vidět, jak se mezera vyvíjí.',
+   '<div class="chartbox"><div class="legend">'+mk('a','Byt 1 ('+nm.a+') − Byt 2 ('+nm.b+')')+'</div><p class="note" style="margin:0 0 8px">V milionech Kč.</p>'+ch2.svg+'<div class="ctip" id="chart2t"></div></div>');
+  var rows=[['Hodnota nového bytu',function(q){return q.val[t];}],['Hodnota starého bytu (jen při pronájmu)',function(q){return q.valOld[t];}],['Hotovost a investice',function(q){return q.cash[t];}],['Dluh z nového úvěru',function(q){return -q.dNew[t];}],['Dluh ze staré hypotéky',function(q){return -q.dOld[t];}]];
   var body='';rows.forEach(function(r){var x=r[1](A),y=r[1](B);body+='<tr><td>'+r[0]+'</td><td class="num'+ng(x)+'">'+kc(x)+'</td><td class="num'+ng(y)+'">'+kc(y)+'</td><td class="num'+ng(x-y)+'">'+kc(x-y)+'</td></tr>';});
   body+='<tr class="hl"><td>Čisté jmění</td><td class="num">'+kc(A.nw[t])+'</td><td class="num">'+kc(B.nw[t])+'</td><td class="num'+ng(dd)+'">'+kc(dd)+'</td></tr>';
   var fee=function(q){return (q.val[t]+q.valOld[t])*L.sell/100;};
