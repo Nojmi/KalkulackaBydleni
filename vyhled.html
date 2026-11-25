@@ -60,7 +60,7 @@ td.pos{color:var(--acc);font-weight:600}
 (function(){
 var BY=BYD,st=BY.st,kc=BY.kc,fmtIn=BY.fmtIn,parse=BY.parse,esc=BY.esc,pmt=BY.pmt;
 var LS='bydleni-vyhled-v1',N=180;
-var DEF={g:3,rc:3,infl:2.5,gi:3,sell:2,maint:0.5,fix:5,rate2:5,rneg:9,pre:8,HZ:10,p1:0,p2:0,scen:'A'};
+var DEF={g:3,rc:3,infl:2.5,gi:3,sell:2,maint:0.5,fix:3,rate2:5,rneg:9,pre:8,HZ:10,p1:0,p2:0,scen:'A'};
 var L=Object.assign({},DEF);
 try{var o=JSON.parse(localStorage.getItem(LS));if(o)for(var k in DEF){if(typeof o[k]===typeof DEF[k])L[k]=o[k];}}catch(e){}
 function saveL(){try{localStorage.setItem(LS,JSON.stringify(L));}catch(e){}}
@@ -75,9 +75,9 @@ var GROUPS=[
   ['sell','Náklady při prodeji (provize, právník) z ceny bytu','%',1],
   ['maint','Údržba a opravy bytu ročně z jeho ceny','%',2]]},
  {t:'Termín koupy',open:0,f:[
-  ['pre','Za kolik měsíců od koupy (1. 3. 2027) končí fixace staré hypotéky','měsíců',0]]},
+  ['pre','Za kolik měsíců od koupy (1. 3. 2027) končí fixace staré hypotéky (26. 10. 2027)','měsíců',0]]},
  {t:'Nový úvěr',open:0,f:[
-  ['fix','Délka první fixace nového úvěru','let',0],
+  ['fix','Délka první fixace nového úvěru (3 roky podle nabídky banky)','let',0],
   ['rate2','Sazba nového úvěru po první fixaci','% p. a.',2],
   ['rneg','Úrok, když volné peníze dojdou (dluh na účtu)','% p. a.',1]]}
 ];
@@ -99,9 +99,9 @@ tabR.addEventListener('click',function(){setTab(false);});tabI.addEventListener(
 function sim(p,scen,o){
   var c=BY.calc(p),s=c.s,X=c[scen],hasNew=scen!=='C',hasOld=scen!=='A';
   var gV=Math.pow(1+o.g/100,1/12),gI=Math.pow(1+o.infl/100,1/12),gW=Math.pow(1+o.gi/100,1/12),gC=Math.pow(1+o.rc/100,1/12),gN=Math.pow(1+o.rneg/100,1/12);
-  /* stará hypotéka: do koupě uplynulo (monthsFix − pre) měsíců, po koupě ještě pre měsíců běží stará sazba */
-  var pre=Math.max(0,Math.round(o.pre)),elapsed=Math.max(0,Math.round(s.monthsFix)-pre),rr0=s.oldRate/1200;
-  var balBuy=rr0===0?s.oldBal-c.payNow*elapsed:s.oldBal*Math.pow(1+rr0,elapsed)-c.payNow*(Math.pow(1+rr0,elapsed)-1)/rr0;balBuy=Math.max(0,balBuy);
+  /* stará hypotéka: zůstatek k datu koupy = zadaný zůstatek (dnes), po koupě ještě pre měsíců běží stará sazba */
+  var pre=Math.max(0,Math.round(o.pre)),rr0=s.oldRate/1200;
+  var balBuy=Math.max(0,s.oldBal);
   var price=hasNew?s.price:0,r=(scen==='A'?s.rateA:s.rateB),term=Math.round(s.term*12),loan0=0;
   if(scen==='A')loan0=Math.max(0,s.price-(s.oldValue-s.sellCost-balBuy)-s.usedA);else if(scen==='B')loan0=X.loan;
   var insK=(hasNew&&X.loan>0)?loan0/X.loan:1,ins0=hasNew?X.ins*insK:0;
@@ -120,7 +120,7 @@ function sim(p,scen,o){
     }
     var op=0,oi=0,oins=0;
     if(ob>0.5){
-      if(t===pre+1){or=s.rateAfter/1200;opay=pmt(ob,s.rateAfter,s.oldYears-(elapsed+pre)/12);obRef=Math.max(1,ob);}
+      if(t===pre+1){or=s.rateAfter/1200;opay=pmt(ob,s.rateAfter,s.oldYears-pre/12);obRef=Math.max(1,ob);}
       oi=ob*or;var q=Math.min(opay,ob+oi);oins=t<=pre?s.oldIns:s.oldInsAfter*ob/obRef;ob+=oi-q;if(ob<0.5)ob=0;op=q;
     }
     var serv=(hasNew?s.newServ:0)*fI,maint=price*o.maint/1200*fI;
@@ -134,6 +134,11 @@ function sim(p,scen,o){
   }
   a.min=Math.min.apply(null,a.cash);a.minT=a.cash.indexOf(a.min);
   a.neg=null;for(var j=0;j<=N;j++)if(a.cash[j]<0){a.neg=j;break;}
+  var pay0=hasNew?pmt(loan0,(scen==='A'?s.rateA:s.rateB),s.term):0,oldNow=hasOld?(pre>0?c.payNow+s.oldIns:c.oldPay+s.oldInsAfter):0;
+  a.info={area:hasNew?(s.area||0):0,price:s.price,sale:s.oldValue-s.sellCost-balBuy,used:scen==='A'?s.usedA:s.usedB,loan:loan0,rate:(scen==='A'?s.rateA:s.rateB),pay:pay0,ins:ins0,serv:hasNew?s.newServ:0,
+    income:s.income,other:s.other,ann:c.ann,oldNow:oldNow,rent:scen==='B'?c.rentNet:0};
+  a.info.left=a.info.income-a.info.other-(a.info.pay+a.info.ins+a.info.serv+a.info.oldNow-a.info.rent);
+  a.info.year=a.info.left*12-a.info.ann;
   a.c=c;a.loan0=loan0;a.balBuy=balBuy;return a;
 }
 function P(id){for(var i=0;i<st.profiles.length;i++)if(st.profiles[i].id===id)return st.profiles[i];return null;}
@@ -195,7 +200,30 @@ function render(){
   var h=panel('h-v','Co porovnáváme','Dva byty, které si vyberete, a co se stane se starým bytem. Čísla se berou ze základní kalkulačky (příjem, výdaje, hypotéka, úspory).',
    '<div class="sel3"><div><label for="s1">Byt 1</label><select id="s1">'+opt(L.p1)+'</select></div><div><label for="s2">Byt 2</label><select id="s2">'+opt(L.p2)+'</select></div><div><label for="s3">Starý byt</label><select id="s3"><option value="A"'+(L.scen==='A'?' selected':'')+'>Prodáme ho</option><option value="B"'+(L.scen==='B'?' selected':'')+'>Pronajmeme ho</option></select></div></div>'+
    '<div class="hz" role="group" aria-label="Horizont">'+[5,10,15].map(function(y){return '<button type="button" data-hz="'+y+'" aria-pressed="'+(y===hz)+'">Za '+y+' let</button>';}).join('')+'</div>');
-  var A=R.a,B=R.b,dd=A.nw[t]-B.nw[t],best=dd>=0?'a':'b',loser=dd>=0?'b':'a',diff=Math.abs(dd);
+  var A=R.a,B=R.b;
+  var I=A.info,J=B.info,rowI=function(lab,x,y,f,dif){return '<tr><td>'+lab+'</td><td class="num">'+f(x)+'</td><td class="num">'+f(y)+'</td><td class="num'+ng(x-y)+'">'+(typeof dif==='function'?dif(x-y):f(x-y))+'</td></tr>';};
+  var m2=function(v){return v>0?fmtIn(v,1)+NB+'m²':'—';},k0=function(v){return kc(v);},pb1=(I.loan/I.price-J.loan/J.price)*100;
+  var ib=rowI('Plocha bytu bez sklepa',I.area,J.area,m2,function(d){return I.area>0&&J.area>0?(d>=0?'+':'−')+fmtIn(Math.abs(d),1)+NB+'m²':'';})+
+   rowI('Kupní cena',I.price,J.price,k0)+
+   '<tr><td>Cena za m² bez sklepa</td><td class="num">'+(I.area>0?kc(I.price/I.area):'—')+'</td><td class="num">'+(J.area>0?kc(J.price/J.area):'—')+'</td><td class="num">'+(I.area>0&&J.area>0?kc(I.price/I.area-J.price/J.area):'')+'</td></tr>'+
+   (L.scen==='A'?rowI('Čistý výtěžek z prodeje starého bytu (cena − náklady − zbývající hypotéka)',I.sale,J.sale,k0):'<tr><td>Starý byt</td><td class="num" colspan="3">zůstává a pronajímá se, nic se neprodává</td></tr>')+
+   rowI('Vlastní peníze (rezervační záloha)',I.used,J.used,k0)+
+   '<tr class="hl"><td>Potřebný úvěr</td><td class="num">'+kc(I.loan)+'</td><td class="num">'+kc(J.loan)+'</td><td class="num">'+kc(I.loan-J.loan)+'</td></tr>'+
+   '<tr><td>Úvěr jako podíl z ceny</td><td class="num">'+pc(I.loan/I.price*100,1)+'</td><td class="num">'+pc(J.loan/J.price*100,1)+'</td><td class="num">'+(pb1>=0?'+':'−')+fmtIn(Math.abs(pb1),1)+NB+'p. b.</td></tr>'+
+   '<tr><td>Sazba a fixace</td><td class="num">'+pc(I.rate,2)+', '+L.fix+' roky</td><td class="num">'+pc(J.rate,2)+', '+L.fix+' roky</td><td class="num"></td></tr>'+
+   rowI('Splátka úvěru',I.pay,J.pay,k0)+
+   rowI('Pojištění hypotéky',I.ins,J.ins,k0)+
+   rowI('Zálohy, energie a pojištění bytu',I.serv,J.serv,k0)+
+   (L.scen==='B'?rowI('Starý byt: splátka a pojištění staré hypotéky',I.oldNow,J.oldNow,k0)+rowI('Starý byt: čistý nájem',I.rent,J.rent,k0):'')+
+   rowI('Čistý příjem domácnosti',I.income,J.income,k0)+
+   rowI('Výdaje domácnosti (bez bydlení) měsíčně',I.other,J.other,k0)+
+   '<tr class="hl"><td>Zbývá z příjmu měsíčně</td><td class="num">'+kc(I.left)+'</td><td class="num">'+kc(J.left)+'</td><td class="num'+ng(I.left-J.left)+'">'+kc(I.left-J.left)+'</td></tr>'+
+   rowI('Roční výdaje celkem',I.ann,J.ann,k0)+
+   '<tr class="hl"><td>Šetření ročně po ročních výdajích</td><td class="num'+ng(I.year)+'">'+kc(I.year)+'</td><td class="num'+ng(J.year)+'">'+kc(J.year)+'</td><td class="num'+ng(I.year-J.year)+'">'+kc(I.year-J.year)+'</td></tr>';
+  h+=panel('h-i','Z čeho se počítá','Čísla na začátku, ze kterých model vychází. Poslední sloupec je rozdíl Byt 1 − Byt 2.',
+   tw('Vstupní čísla','<table><thead><tr><th>Položka</th><th class="num">'+esc(pa.name)+'</th><th class="num">'+esc(pb.name)+'</th><th class="num">Rozdíl</th></tr></thead><tbody>'+ib+'</tbody></table>')+
+   '<p class="note">Výdaje domácnosti a roční výdaje se berou ze základní kalkulačky. „Zbývá z příjmu měsíčně“ je před ročními výdaji, „Šetření ročně“ je po nich.</p>');
+  var dd=A.nw[t]-B.nw[t],best=dd>=0?'a':'b',loser=dd>=0?'b':'a',diff=Math.abs(dd);
   var card=function(k,t2,v,sub,win){return '<div class="kc'+(win?' win':'')+'"><div class="t">'+(k?mk(k,t2):esc(t2))+'</div><div class="v'+ng(v)+'">'+mil(v)+'</div><div class="s">'+sub+'</div></div>';};
   h+=panel('h-k','Čisté jmění za '+hz+' let','Hodnota bytů plus hotovost a investice minus dluhy. Bez nákladů na prodej.',
    '<div class="kp">'+card('a',pa.name,A.nw[t],'nový úvěr '+mil(A.loan0),best==='a')+card('b',pb.name,B.nw[t],'nový úvěr '+mil(B.loan0),best==='b')+card('','Rozdíl (Byt 1 − Byt 2)',dd,dd>=0?'lépe '+esc(nm.a):'lépe '+esc(nm.b),false)+'</div>');

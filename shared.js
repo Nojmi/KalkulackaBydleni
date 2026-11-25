@@ -7,6 +7,7 @@ var KEY='bydleni-spolecne-v1',OLD1='kalkulacka-profily-v1',OLD0='kalkulacka-vets
 /* pole profilu nemovitosti: [id, popis, jednotka, desetinná místa] */
 var PF=[
  ['price','Kupní cena','Kč'],
+ ['area','Plocha bytu bez sklepa (pro cenu za m²)','m²',1],
  ['reno','Rekonstrukce a vybavení celkem (z úspor, nezvyšuje úvěr)','Kč'],
  ['newServ','Zálohy, energie a pojištění bytu','Kč/měs'],
  ['usedA','Vlastní peníze do koupě, když starý byt prodáte','Kč'],
@@ -120,7 +121,7 @@ function seed(){return [
 var st={base:clone(BDEF),exp:clone(EDEF),ann:clone(ADEF),profiles:seed(),sel:1,nextId:5};
 function isNum(x){return typeof x==='number'&&isFinite(x);}
 function renoTotal(v){var t=0;RIDS.forEach(function(k){if(isNum(v[k]))t+=v[k];});return t;}
-function fixReno(p){var v=p.v,any=RIDS.some(function(k){return isNum(v[k])&&v[k]>0;});
+function fixReno(p){var v=p.v;if(!isNum(v.area))v.area=0;var any=RIDS.some(function(k){return isNum(v[k])&&v[k]>0;});
   if(!any&&isNum(v.reno)&&v.reno>0)v.r10=v.reno;
   RIDS.forEach(function(k){if(!isNum(v[k]))v[k]=0;});v.reno=renoTotal(v);}
 function fixAll(){st.profiles.forEach(fixReno);}
@@ -169,8 +170,12 @@ function load(){
       var o=JSON.parse(decodeURIComponent(escape(atob(m[2]))));
       if(m[1]==='d')adopt(o);
       else{
-        var v={};PIDS.forEach(function(k){v[k]=isNum(o.v&&o.v[k])?o.v[k]:0;});
-        st.profiles.push({id:st.nextId,name:String(o.name||'Profil').slice(0,60),note:String(o.note||'').slice(0,300),v:v});st.sel=st.nextId++;
+        /* o = jeden profil {name,note,v}, nebo {add:[profily], base:{společné údaje}}; base přepíše jen uvedené klíče */
+        (Array.isArray(o.add)?o.add:[o]).slice(0,10).forEach(function(q){
+          var v={};PIDS.forEach(function(k){v[k]=isNum(q.v&&q.v[k])?q.v[k]:0;});
+          st.profiles.push({id:st.nextId,name:String(q.name||'Profil').slice(0,60),note:String(q.note||'').slice(0,300),v:v});st.sel=st.nextId++;
+        });
+        if(o.base&&typeof o.base==='object')BIDS.forEach(function(k){if(isNum(o.base[k]))st.base[k]=o.base[k];});
       }
       save();history.replaceState(null,'',location.pathname+location.search);
     }
