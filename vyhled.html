@@ -223,6 +223,21 @@ function render(){
   h+=panel('h-i','Z čeho se počítá','Čísla na začátku, ze kterých model vychází. Poslední sloupec je rozdíl Byt 1 − Byt 2.',
    tw('Vstupní čísla','<table><thead><tr><th>Položka</th><th class="num">'+esc(pa.name)+'</th><th class="num">'+esc(pb.name)+'</th><th class="num">Rozdíl</th></tr></thead><tbody>'+ib+'</tbody></table>')+
    '<p class="note">Výdaje domácnosti a roční výdaje se berou ze základní kalkulačky. „Zbývá z příjmu měsíčně“ je před ročními výdaji, „Šetření ročně“ je po nich.</p>');
+  if(I.area>0&&J.area>0&&Math.abs(I.area-J.area)>0.05){
+    var dA=I.area-J.area,dP=I.price-J.price,pI=I.price/I.area,pJ=J.price/J.area,sg=function(v,u){return (v>=0?'+':'−')+kc(Math.abs(v)).replace(/ Kč$/,NB+(u||'Kč'));};
+    var bigI=I.area>=J.area,nmB=esc(bigI?pa.name:pb.name),nmS=esc(bigI?pb.name:pa.name),pBig=bigI?pI:pJ,pSm=bigI?pJ:pI,dAa=Math.abs(dA),dPa=Math.abs(dP);
+    var rb=[['Rozdíl plochy (větší − menší byt)',fmtIn(dAa,1)+NB+'m²'],
+      ['Kdyby se ty metry počítaly za cenu za m² menšího bytu ('+kc(pSm)+')',kc(dAa*pSm)],
+      ['Kdyby se počítaly za cenu za m² většího bytu ('+kc(pBig)+')',kc(dAa*pBig)],
+      ['Skutečný rozdíl kupních cen',kc(dPa)],
+      ['<b>Cena za každý metr navíc</b> (skutečný rozdíl ceny / rozdíl plochy)','<b>'+kc(dPa/dAa)+'/m²</b>'],
+      ['Skutečný rozdíl ceny proti „menší byt × metry navíc“',sg(dPa-dAa*pSm)],
+      ['Vyšší splátka za každý metr navíc',kc(Math.abs(I.pay-J.pay)/dAa)+' měsíčně'],
+      ['Nižší šetření ročně za každý metr navíc',kc(Math.abs(I.year-J.year)/dAa)+' ročně']];
+    h+=panel('h-m','Kolik dělá rozdíl v metrech','Větší byt: '+nmB+'. Menší byt: '+nmS+'. Ukazuje, jestli se metry navíc počítají za stejnou cenu jako zbytek bytu.',
+     tw('Rozdíl v metrech','<table class="nomin"><thead><tr><th>Položka</th><th class="num">Hodnota</th></tr></thead><tbody>'+rb.map(function(r){return '<tr><td>'+r[0]+'</td><td class="num">'+r[1]+'</td></tr>';}).join('')+'</tbody></table>')+
+     '<p class="note">Plocha je bez sklepa. Když je cena za metr navíc pod cenou menšího bytu, větší byt je na metr levnější.</p>');
+  }
   var dd=A.nw[t]-B.nw[t],best=dd>=0?'a':'b',loser=dd>=0?'b':'a',diff=Math.abs(dd);
   var card=function(k,t2,v,sub,win){return '<div class="kc'+(win?' win':'')+'"><div class="t">'+(k?mk(k,t2):esc(t2))+'</div><div class="v'+ng(v)+'">'+mil(v)+'</div><div class="s">'+sub+'</div></div>';};
   h+=panel('h-k','Čisté jmění za '+hz+' let','Hodnota bytů plus hotovost a investice minus dluhy. Bez nákladů na prodej.',
