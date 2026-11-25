@@ -327,6 +327,38 @@ function sankMain(x){
     rn.gross<=0?'<p class="note">Nemáš zadaný žádný nájem.</p>':'<div class="sankwrap">'+rn.svg+'</div><p class="note" style="margin-top:8px">'+(rn.diff>=0?'Nájem pokryje hypotéku i náklady a zbývá <b>'+kc(rn.diff)+'</b>'+(sankP==='y'?' za rok':' měsíčně')+'.':'Nájem na hypotéku a náklady nestačí, <b>'+kc(-rn.diff)+'</b>'+(sankP==='y'?' za rok':' měsíčně')+' doplácíš ze svého.')+' Daň z nájmu je počítaná způsobem '+['','A (paušál)','B (skutečné výdaje)','C (skutečné výdaje a odpisy)'][S.taxInfo.mode]+'.</p>');
   var sSpine=panel('s-spine','h-spine','Zelená páteř: co zbývá po každém kroku','Zelený pruh je to, co z příjmu ještě zbývá po každém kroku, šedé větve odpadají. Varianta a období se přepínají tady.',
     '<div class="vrow">'+perBtns+segBtns('data-sk',ORDER.map(function(k){return [k,NAMES[k]];}),sankK,'Varianta')+'</div><div class="sankwrap">'+sankSpine(sx)+'</div>');
+  /* úspory: co z nich ukrojíme */
+  function uspSteps(used){
+    var st2=[{l:'Úspory dnes',v:S.savings,t:1},{l:'Vlastní peníze do koupě',v:-used}],sum=0;
+    B.RENO.forEach(function(f){var v=+S[f[0]]||0;if(v>0){sum+=v;st2.push({l:f[1],v:-v});}});
+    if(S.reno-sum>0.5)st2.push({l:'Rekonstrukce a ostatní',v:-(S.reno-sum)});
+    st2.push({l:'Zbývá po koupi',v:S.savings-used-S.reno,t:1});return st2;
+  }
+  function uspSvg(stp){
+    var W=760,RH=30,T=8,X0=250,X1=520,cum=S.savings,mn=Math.min(0,S.savings),mx=Math.max(S.savings,1),rows=[],i;
+    var run=0;stp.forEach(function(r){if(r.t){run=r.v;}else{run+=r.v;}mn=Math.min(mn,run);});
+    var sc=function(v){return X0+(X1-X0)*(v-mn)/((mx-mn)||1);},H=T*2+RH*stp.length,o='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Úspory a co z nich ubude" style="width:100%;height:auto;max-width:'+W+'px">';
+    o+='<line x1="'+sc(0)+'" x2="'+sc(0)+'" y1="'+T+'" y2="'+(H-T)+'" stroke="var(--line)" stroke-width="1.2"/>';
+    var c2=0;
+    stp.forEach(function(r,j){
+      var y=T+j*RH,a,b,col,txt;
+      if(r.t){a=Math.min(0,r.v);b=Math.max(0,r.v);c2=r.v;col=r.v<0?'var(--neg)':'var(--acc)';txt=kc(r.v);}
+      else{b=c2;a=c2+r.v;c2=a;col='var(--v0)';txt='−'+kc(-r.v)+(S.savings>0?' ('+Math.round(-r.v/S.savings*100)+' %)':'');}
+      var x1=sc(Math.min(a,b)),w=Math.max(2,sc(Math.max(a,b))-x1);
+      o+='<text x="'+(X0-10)+'" y="'+(y+RH/2+4)+'" text-anchor="end" font-size="12.5" fill="var(--ink)"'+(r.t?' font-weight="700"':'')+'>'+esc(r.l)+'</text>';
+      o+='<rect x="'+x1.toFixed(1)+'" y="'+(y+5)+'" width="'+w.toFixed(1)+'" height="'+(RH-10)+'" rx="3" fill="'+col+'"'+(r.t?'':' opacity=".85"')+'/>';
+      var lx=x1+w+6,anc='start';
+      o+='<text x="'+lx.toFixed(1)+'" y="'+(y+RH/2+4)+'" text-anchor="'+anc+'" font-size="12.5" fill="var(--ink)" font-weight="'+(r.t?700:500)+'">'+esc(txt)+'</text>';
+    });
+    return o+'</svg>';
+  }
+  var uA=uspSteps(S.usedA),uB=uspSteps(S.usedB),sameU=Math.abs(S.usedA-S.usedB)<0.5;
+  function uspRun(x,left){var mo=x.housing+S.other+ann/12;return left>0&&mo>0?left/mo:0;}
+  function uspNote(left,x){var m=uspRun(x,left);return '<p class="note" style="margin-top:6px">Po koupi zůstane '+(left<0?'<b class="neg">'+kc(left)+'</b> (úspory nestačí)':'<b>'+kc(left)+'</b>')+(left>0?', to vystačí asi na <b>'+fmtIn(Math.round(m*10)/10,1)+' měsíce</b> všech výdajů domácnosti včetně bydlení.':'.')+'</p>';}
+  var sUsp=panel('s-usp','h-usp','Úspory: co z nich ukrojíme','Od úspor dnes odečteme vlastní peníze do koupě a rekonstrukci (rozepsanou po položkách). Zbytek je rezerva, která ti po koupi zůstane. Procenta jsou z úspor dnes.',
+    S.savings<=0&&S.reno<=0&&S.usedA<=0?'<p class="note">Nemáš zadané žádné úspory ani vlastní peníze.</p>':
+    (sameU?'<div class="vhead" style="margin:4px 0"><h3>'+mk('A')+' i '+mk('B')+'</h3></div>'+uspSvg(uA)+uspNote(S.savings-S.usedA-S.reno,R.A):
+     '<div class="vhead" style="margin:4px 0"><h3>'+mk('A')+'</h3></div>'+uspSvg(uA)+uspNote(S.savings-S.usedA-S.reno,R.A)+'<div class="vhead" style="margin:14px 0 4px"><h3>'+mk('B')+'</h3></div>'+uspSvg(uB)+uspNote(S.savings-S.usedB-S.reno,R.B)));
   var sBud=panel('s-bud','h-bud','Měsíční rozpočet: '+esc(P.name),'Čtyři varianty vedle sebe, částky v Kč.',tw('Měsíční rozpočet čtyř variant',t));
 
   /* roční přehled */
@@ -446,7 +478,7 @@ function sankMain(x){
     '<div class="verdict"><h3>Můj názor</h3>'+op.map(function(x){return '<p>'+x+'</p>';}).join('')+
     '<p class="note">Je to pohled z čísel, která jsi zadal, a nejsem finanční poradce. Výsledek závisí na odhadech výdajů, úroku po refixaci a obsazenosti bytu. Přesné parametry ověř u banky.</p></div>');
 
-  outEl.innerHTML='<div class="resA">'+sProf+sBud+sSank+sRentS+sSpine+sVyd+sNaj+'</div><div class="resB">'+sRok+sSh+'</div>';
+  outEl.innerHTML='<div class="resA">'+sProf+sBud+sUsp+sSank+sRentS+sSpine+sVyd+sNaj+'</div><div class="resB">'+sRok+sSh+'</div>';
   var et=document.getElementById('expTot'),at=document.getElementById('annTot');
   if(et)et.textContent=kc(B.expTotal());
   if(at)at.textContent=kc(B.annTotal());
