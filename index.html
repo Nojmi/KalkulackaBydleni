@@ -330,12 +330,12 @@ function sankMain(x){
   /* úspory: co z nich ukrojíme */
   function uspSteps(used){
     var st2=[{l:'Úspory dnes',v:S.savings,t:1},{l:'Vlastní peníze do koupě',v:-used}],sum=0;
-    B.RENO.forEach(function(f){var v=+S[f[0]]||0;if(v>0){sum+=v;st2.push({l:f[1],v:-v});}});
+    B.RENO.forEach(function(f){var v=+S[f[0]]||0;if(v>0){sum+=v;st2.push({l:f[1].replace(/\s*\(.*\)\s*$/,''),v:-v});}});
     if(S.reno-sum>0.5)st2.push({l:'Rekonstrukce a ostatní',v:-(S.reno-sum)});
     st2.push({l:'Zbývá po koupi',v:S.savings-used-S.reno,t:1});return st2;
   }
   function uspSvg(stp){
-    var W=760,RH=30,T=8,X0=250,X1=520,cum=S.savings,mn=Math.min(0,S.savings),mx=Math.max(S.savings,1),rows=[],i;
+    var W=780,RH=30,T=8,X0=300,X1=540,cum=S.savings,mn=Math.min(0,S.savings),mx=Math.max(S.savings,1),rows=[],i;
     var run=0;stp.forEach(function(r){if(r.t){run=r.v;}else{run+=r.v;}mn=Math.min(mn,run);});
     var sc=function(v){return X0+(X1-X0)*(v-mn)/((mx-mn)||1);},H=T*2+RH*stp.length,o='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Úspory a co z nich ubude" style="width:100%;height:auto;max-width:'+W+'px">';
     o+='<line x1="'+sc(0)+'" x2="'+sc(0)+'" y1="'+T+'" y2="'+(H-T)+'" stroke="var(--line)" stroke-width="1.2"/>';
