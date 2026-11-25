@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Druhé dítě</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.kc{background:var(--raised);border:1px solid var(--line);border-radius:16px;padding:16px;min-width:0}
+.kc .t{font-size:13px;font-weight:600;color:var(--mut);display:flex;gap:8px;align-items:center}
+.kc .v{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:4px;font-variant-numeric:tabular-nums lining-nums;white-space:nowrap}
+.kc .s{font-size:12.5px;color:var(--mut);margin-top:2px}
+.sel3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:14px}
+.sel3 label{display:block;font-size:13px;font-weight:600;color:var(--mut);margin-bottom:4px}
+.sel3 select{width:100%;min-height:48px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--raised);color:var(--ink);font:inherit;font-weight:600;font-size:14px}
+.hz{justify-content:flex-start;margin:0 0 12px}
+.legend .vh{min-width:0;max-width:100%;white-space:normal}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="brand">
+    <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 3l9 8"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-6h5v6"/></svg></span>
+    <div>
+      <h1>Druhé dítě</h1>
+      <p class="lead">Jak se bude vyvíjet rezerva po koupi bytu, když se narodí druhé dítě a jeden z rodičů bude doma?</p>
+    </div>
+  </div>
+  <nav class="seg" aria-label="Stránky">
+    <a class="seg-i" href="index.html">Základní kalkulačka</a>
+    <a class="seg-i" href="komplexni.html">Komplexní kalkulačka <span class="beta">BETA</span></a>
+    <a class="seg-i" href="uspory.html">Kam s úsporami <span class="beta">BETA</span></a>
+    <a class="seg-i" href="investice.html">Byt vs. investice <span class="beta">BETA</span></a>
+    <a class="seg-i" href="vyhled.html">Výhled bohatství <span class="beta">BETA</span></a>
+    <a class="seg-i on" href="dite.html" aria-current="page">Druhé dítě <span class="beta">BETA</span></a>
+  </nav>
+</header>
+
+<div class="seg mtabs" role="group" aria-label="Zobrazení">
+  <button class="seg-i" type="button" id="tabR" aria-pressed="true">Výsledky</button>
+  <button class="seg-i" type="button" id="tabI" aria-pressed="false">Předpoklady</button>
+</div>
+
+<div class="cols">
+  <aside class="stack inputs panel-inputs" id="inputs" aria-label="Předpoklady"></aside>
+  <main class="stack res one panel-results" id="results" aria-live="polite"></main>
+</div>
+<footer class="foot">Orientační model, ne finanční ani daňové poradenství. Počítá variantu, kdy se starý byt prodá, měsíc po měsíci od koupě 1. 3. 2027. Splátky, výdaje a úspory bere z vybraného profilu bytu. Dávky (mateřská, rodičovský, zvýhodnění na dítě) jsou zadané ručně v předpokladech a je třeba je ověřit na úřadě.</footer>
+</div>
+
+<script src="shared.js"></script>
+<script>
+(function(){
+var BY=BYD,st=BY.st,kc=BY.kc,fmtIn=BY.fmtIn,parse=BY.parse,esc=BY.esc;
+var LS='bydleni-dite-v1',NB=' ';
+var entry0=80000;try{var vv=JSON.parse(localStorage.getItem('bydleni-vyhled-v1'));if(vv&&typeof vv.entry==='number')entry0=vv.entry;}catch(e){}
+var DEF={p:0,mode:'z',ms:5,matN:6,rodN:13,N:36,wsh:64,mat:64000,rod:400000,tb:1860,cc:0,vac:15000,sav2:26450,entry:entry0};
+var L=Object.assign({},DEF);
+try{var o=JSON.parse(localStorage.getItem(LS));if(o)for(var k in DEF){if(typeof o[k]===typeof DEF[k])L[k]=o[k];}}catch(e){}
+function saveL(){try{localStorage.setItem(LS,JSON.stringify(L));}catch(e){}}
+var GROUPS=[
+ {t:'Příjem a dávky',open:1,f:[
+  ['wsh','Podíl matky na příjmu domácnosti (115 000 z 180 000 Kč = 64 %)','%',0],
+  ['mat','Mateřská (dávka matce) měsíčně, strop cca 2 111 Kč za den','Kč/měs',0],
+  ['rod','Rodičovský příspěvek celkem (u narození od 2027)','Kč',0],
+  ['tb','Daňové zvýhodnění na 2. dítě měsíčně (22 320 Kč ročně)','Kč/měs',0]]},
+ {t:'Termíny',open:0,f:[
+  ['ms','Začátek mateřské: kolikátý měsíc od koupě (1 = 3/2027, 5 = 7/2027)','měsíc',0],
+  ['matN','Délka mateřské','měsíců',0],
+  ['rodN','Za kolik měsíců se vyplatí rodičovský','měsíců',0],
+  ['N','Délka výpočtu od koupě','měsíců',0]]},
+ {t:'Výdaje',open:0,f:[
+  ['cc','Náklady na druhé dítě měsíčně (máte věci po prvním synovi, výchozí 0)','Kč/měs',0],
+  ['vac','Úspora v režimu „bez dovolených“ měsíčně (dovolené 180 000 Kč ročně)','Kč/měs',0],
+  ['sav2','Úspora v „úsporném“ režimu celkem měsíčně (včetně dovolených)','Kč/měs',0],
+  ['entry','Jednorázové náklady při koupi z úspor (stejné jako ve Výhledu bohatství)','Kč',0]]}
+];
+var inEl=document.getElementById('inputs'),res=document.getElementById('results');
+function fieldHtml(f){var id='f-'+f[0];return '<div class="field"><label for="'+id+'">'+f[1]+'</label><div class="inp"><input id="'+id+'" data-k="'+f[0]+'" data-d="'+f[3]+'" type="text" inputmode="decimal" autocomplete="off"><span class="u">'+f[2]+'</span></div></div>';}
+inEl.innerHTML=GROUPS.map(function(g){return '<details class="acc"'+(g.open?' open':'')+'><summary><span class="at">'+g.t+'</span></summary><div class="accbody">'+g.f.map(fieldHtml).join('')+'<button class="ghost" type="button" data-reset="1">Obnovit výchozí</button></div></details>';}).join('');
+function fill(){inEl.querySelectorAll('input[data-k]').forEach(function(el){el.value=fmtIn(L[el.dataset.k],+el.dataset.d);});}
+inEl.addEventListener('input',function(e){var el=e.target;if(!el.dataset||!el.dataset.k)return;L[el.dataset.k]=parse(el.value);saveL();render();});
+inEl.addEventListener('focusin',function(e){if(e.target.tagName==='INPUT')e.target.select();});
+inEl.addEventListener('focusout',function(e){var el=e.target;if(el.dataset&&el.dataset.k)el.value=fmtIn(L[el.dataset.k],+el.dataset.d);});
+inEl.addEventListener('click',function(e){if(e.target.closest('[data-reset]')){['wsh','mat','rod','tb','ms','matN','rodN','N','cc','vac','sav2','entry'].forEach(function(k){L[k]=DEF[k];});saveL();fill();render();}});
+var tabR=document.getElementById('tabR'),tabI=document.getElementById('tabI');
+function setTab(i){document.body.classList.toggle('show-inputs',i);tabR.setAttribute('aria-pressed',String(!i));tabI.setAttribute('aria-pressed',String(i));window.scrollTo(0,0);}
+tabR.addEventListener('click',function(){setTab(false);});tabI.addEventListener('click',function(){setTab(true);});
+
+/* ---------- model ---------- */
+var MODES={z:{n:'Plný (s dovolenými)'},d:{n:'Bez dovolených'},u:{n:'Úsporný'}};
+function P(id){for(var i=0;i<st.profiles.length;i++)if(st.profiles[i].id===id)return st.profiles[i];return null;}
+function ml(m){var k=2+m,y=2027+Math.floor((k-1)/12),mo=((k-1)%12)+1;return mo+'/'+y;}
+function phase(m){var ms=Math.round(L.ms),mn=Math.round(L.matN),rn=Math.round(L.rodN);
+  if(m<ms)return 'plná mzda';if(m<ms+mn)return 'mateřská';if(m<ms+mn+rn)return 'rodičovský';return 'oba v práci';}
+/* kdo je doma: 'o' otec, 'm' matka */
+function run(p,mode,who){
+  var c=BY.calc(p),s=c.s,X=c.A,Y=s.income,w=Math.max(0,Math.min(100,L.wsh))/100;
+  var out=Y-X.yearMonthly,cut=mode==='d'?L.vac:mode==='u'?L.sav2:0;
+  var res0=s.savings-s.usedA-s.reno-L.entry,N=Math.max(1,Math.min(120,Math.round(L.N))),ms=Math.round(L.ms);
+  var rodM=L.rod/Math.max(1,Math.round(L.rodN)),r=res0,rows=[],mn=res0,mnT=0,neg=null;
+  rows.push({m:0,res:res0});
+  for(var m=1;m<=N;m++){
+    var ph=phase(m),inc,wage;
+    if(ph==='plná mzda'){inc=Y;}
+    else if(ph==='mateřská'){inc=(1-w)*Y+L.mat+L.tb;}
+    else if(ph==='rodičovský'){inc=(who==='o'?w*Y:(1-w)*Y)+rodM+L.tb;}
+    else inc=Y+L.tb;
+    var exp=out-cut+(m>=ms?L.cc:0),d=inc-exp;r+=d;
+    rows.push({m:m,ph:ph,inc:inc,exp:exp,d:d,res:r});
+    if(r<mn){mn=r;mnT=m;}if(neg===null&&r<0)neg=m;
+  }
+  return {rows:rows,start:res0,min:mn,minT:mnT,neg:neg,out:out,Y:Y,name:p.name,savings:s.savings,end:r};
+}
+/* ---------- vykreslení ---------- */
+function mil(v){return new Intl.NumberFormat('cs-CZ',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v/1e6)+NB+'mil.'+NB+'Kč';}
+function sd(v){return (v>=0?'+':'−')+kc(Math.abs(v));}
+function ng(v){return v<0?' neg':'';}
+function panel(id,title,hint,body){return '<section class="panel" aria-labelledby="'+id+'"><div class="ph"><div><h2 id="'+id+'">'+title+'</h2>'+(hint?'<p class="hint">'+hint+'</p>':'')+'</div></div>'+body+'</section>';}
+function tw(l,t){return '<div class="tw" role="region" aria-label="'+l+'" tabindex="0">'+t+'</div>';}
+var COL={o:'var(--v2)',m:'var(--v1)'};
+function mk(k,n){return '<span class="vh"><span class="mk" aria-hidden="true" style="background:'+COL[k]+'"></span>'+esc(n)+'</span>';}
+function nice(x){if(x<=0)return 1;var p=Math.pow(10,Math.floor(Math.log10(x))),m=x/p;return (m<=1?1:m<=2?2:m<=5?5:10)*p;}
+function chart(a,b){
+  var W=640,H=340,Lm=48,Rr=12,T=44,Bm=28,N=a.rows.length-1,mn=0,mx=0;
+  a.rows.concat(b.rows).forEach(function(r){if(r.res<mn)mn=r.res;if(r.res>mx)mx=r.res;});
+  var step=nice((mx-mn)/5),y0=Math.floor(mn/step)*step,y1=Math.ceil(mx/step)*step;
+  var X=function(t){return Lm+(W-Lm-Rr)*t/N;},Y=function(v){return T+(H-T-Bm)*(1-(v-y0)/(y1-y0));};
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Vývoj rezervy" id="chart">';
+  for(var v=y0;v<=y1+step/1e6;v+=step)s+='<line x1="'+Lm+'" x2="'+(W-Rr)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--line)" stroke-width="'+(Math.abs(v)<step/1e3?1.8:0.7)+'"/><text x="'+(Lm-6)+'" y="'+(Y(v)+3)+'" text-anchor="end">'+new Intl.NumberFormat('cs-CZ',{maximumFractionDigits:1}).format(v/1e6)+'</text>';
+  var ms=Math.round(L.ms),mn2=Math.round(L.matN),rn=Math.round(L.rodN);
+  var ev=[[ms,'Porod, mateřská'],[ms+mn2,'Rodičovský'],[ms+mn2+rn,'Konec rodičovského']];
+  ev.forEach(function(e,i){if(e[0]>N)return;var x=X(e[0]);
+    s+='<line x1="'+x+'" x2="'+x+'" y1="'+(T-8)+'" y2="'+(H-Bm)+'" stroke="var(--ink)" stroke-width="1" stroke-dasharray="3 4" opacity=".55"/>'+
+       '<text x="'+x+'" y="'+(12+i*13)+'" text-anchor="'+(i===2?'end':'start')+'" font-size="11" fill="var(--ink)">'+esc(e[1])+' ('+ml(e[0])+')</text>';});
+  for(var t=0;t<=N;t++)if(t%6===0&&t<=N)s+='<text x="'+X(t)+'" y="'+(H-8)+'" text-anchor="'+(t>=N-2?'end':'middle')+'">'+(t===0?'start':ml(t))+'</text>';
+  [[a,'o'],[b,'m']].forEach(function(q){var d='';q[0].rows.forEach(function(r,i){d+=(i?'L':'M')+X(i).toFixed(1)+' '+Y(r.res).toFixed(1);});
+    s+='<path d="'+d+'" fill="none" stroke="'+COL[q[1]]+'" stroke-width="2.6" stroke-linejoin="round"/>';});
+  s+='<line id="chartc" x1="0" x2="0" y1="'+T+'" y2="'+(H-Bm)+'" stroke="var(--mut)" stroke-width="1" style="display:none"/></svg>';
+  return {svg:s,W:W,Lm:Lm,Rr:Rr,N:N,a:a,b:b};
+}
+function bind(ch){
+  var svg=document.getElementById('chart'),tip=document.getElementById('charttip'),cur=document.getElementById('chartc');if(!svg)return;
+  function hide(){tip.style.display='none';cur.style.display='none';}
+  svg.addEventListener('pointermove',function(e){
+    var r=svg.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*ch.W,t=Math.round((px-ch.Lm)/(ch.W-ch.Lm-ch.Rr)*ch.N);
+    if(t<0||t>ch.N){hide();return;}
+    var x=ch.Lm+(ch.W-ch.Lm-ch.Rr)*t/ch.N;cur.setAttribute('x1',x);cur.setAttribute('x2',x);cur.style.display='';
+    tip.innerHTML='<b>'+(t===0?'Start':ml(t))+'</b>'+(t?' · '+esc(ch.a.rows[t].ph):'')+'<br>Doma otec: '+kc(ch.a.rows[t].res)+'<br>Doma matka: '+kc(ch.b.rows[t].res);
+    tip.style.display='block';var box=svg.parentNode.getBoundingClientRect(),left=e.clientX-box.left+12;
+    if(left+tip.offsetWidth>box.width-4)left=e.clientX-box.left-tip.offsetWidth-12;
+    tip.style.left=left+'px';tip.style.top='40px';
+  });
+  svg.addEventListener('pointerleave',hide);
+}
+function render(){
+  if(!P(L.p))L.p=BY.cur().id;saveL();
+  var pr=P(L.p),mode=MODES[L.mode]?L.mode:'z',ms=Math.round(L.ms),mn2=Math.round(L.matN),rn=Math.round(L.rodN);
+  var A=run(pr,mode,'o'),B=run(pr,mode,'m');
+  var opt=st.profiles.map(function(p){return '<option value="'+p.id+'"'+(p.id===L.p?' selected':'')+'>'+esc(p.name)+' ('+kc(p.v.price)+')</option>';}).join('');
+  var h=panel('h-v','Pro jaký byt to počítáme','Splátka, zálohy a úspory se berou z vybraného profilu bytu, varianta Starý byt prodáme. Výdaje domácnosti jsou ze základní kalkulačky.',
+   '<div class="sel3"><div><label for="sp">Profil bytu</label><select id="sp">'+opt+'</select></div></div>'+
+   '<div class="hz" role="group" aria-label="Režim výdajů">'+Object.keys(MODES).map(function(k){return '<button type="button" data-mode="'+k+'" aria-pressed="'+(k===mode)+'">'+MODES[k].n+'</button>';}).join('')+'</div>'+
+   tw('Vstupy','<table class="nomin"><thead><tr><th>Položka</th><th class="num">Hodnota</th></tr></thead><tbody>'+
+   [['Úspory dnes',kc(A.savings)],['Rezerva na startu (úspory − vlastní peníze − rekonstrukce − jednorázové náklady)',kc(A.start)],
+    ['Čistý příjem domácnosti',kc(A.Y)],['Měsíční výdaje včetně bydlení v tomto režimu',kc(A.rows[1].exp-(ms<=1?L.cc:0))],
+    ['Zbývá měsíčně při plných mzdách (před dítětem)',kc(A.rows[1].d)]].map(function(r){return '<tr><td>'+r[0]+'</td><td class="num">'+r[1]+'</td></tr>';}).join('')+'</tbody></table>'));
+  /* karty */
+  var card=function(k,t2,v,sub){return '<div class="kc"><div class="t">'+mk(k,t2)+'</div><div class="v'+ng(v)+'">'+mil(v)+'</div><div class="s">'+sub+'</div></div>';};
+  h+=panel('h-k','Nejnižší rezerva',MODES[mode].n+'. Nejnižší bod rezervy za celé období od koupě.',
+   '<div class="kp">'+card('o','Doma otec',A.min,A.minT?'v '+ml(A.minT):'na startu')+card('m','Doma matka',B.min,B.minT?'v '+ml(B.minT):'na startu')+
+   card('o','Doma otec: na konci období',A.end,'po '+(A.rows.length-1)+' měsících')+card('m','Doma matka: na konci období',B.end,'po '+(B.rows.length-1)+' měsících')+'</div>');
+  /* graf */
+  var ch=chart(A,B);
+  h+=panel('h-c','Vývoj rezervy v čase','Svislé čáry jsou události. Najeďte myší pro hodnoty.',
+   '<div class="chartbox"><div class="legend">'+mk('o','Doma otec')+mk('m','Doma matka')+'</div><p class="note" style="margin:0 0 8px">V milionech Kč.</p>'+ch.svg+'<div class="ctip" id="charttip"></div></div>');
+  /* matice režimů */
+  var mm='';Object.keys(MODES).forEach(function(k){var a=run(pr,k,'o'),b=run(pr,k,'m');
+    var cell=function(x){return '<td class="num'+ng(x.min)+'">'+kc(x.min)+(x.minT?' ('+ml(x.minT)+')':'')+'</td>';};
+    mm+='<tr'+(k===mode?' class="hl"':'')+'><td>'+MODES[k].n+'</td><td class="num">'+kc(a.out-(k==='d'?L.vac:k==='u'?L.sav2:0))+'</td>'+cell(a)+cell(b)+'</tr>';});
+  h+=panel('h-m','Režimy výdajů vedle sebe','Nejnižší rezerva v období podle toho, jak moc šetříte.',
+   tw('Režimy','<table><thead><tr><th>Režim</th><th class="num">Výdaje měsíčně</th><th class="num">Min. rezerva: doma otec</th><th class="num">Min. rezerva: doma matka</th></tr></thead><tbody>'+mm+'</tbody></table>'));
+  /* srovnání profilů */
+  var pp='';st.profiles.forEach(function(p){var a=run(p,mode,'o'),b=run(p,mode,'m');
+    pp+='<tr'+(p.id===L.p?' class="hl"':'')+'><td>'+esc(p.name)+'</td><td class="num">'+kc(a.start)+'</td><td class="num">'+kc(a.rows[1].d)+'</td><td class="num'+ng(a.min)+'">'+kc(a.min)+'</td><td class="num'+ng(b.min)+'">'+kc(b.min)+'</td></tr>';});
+  h+=panel('h-p','Srovnání profilů bytů','Stejný scénář pro všechny uložené profily. Režim: '+MODES[mode].n+'.',
+   tw('Profily','<table><thead><tr><th>Profil</th><th class="num">Rezerva na startu</th><th class="num">Zbývá měsíčně</th><th class="num">Min. rezerva: doma otec</th><th class="num">Min. rezerva: doma matka</th></tr></thead><tbody>'+pp+'</tbody></table>'));
+  /* měsíc po měsíci */
+  var tb='';for(var m=1;m<A.rows.length;m++){var a=A.rows[m],b=B.rows[m];
+    tb+='<tr><td>'+ml(m)+'</td><td>'+a.ph+'</td><td class="num">'+kc(a.inc)+'</td><td class="num'+ng(a.d)+'">'+kc(a.d)+'</td><td class="num'+ng(a.res)+'">'+kc(a.res)+'</td><td class="num">'+kc(b.inc)+'</td><td class="num'+ng(b.d)+'">'+kc(b.d)+'</td><td class="num'+ng(b.res)+'">'+kc(b.res)+'</td></tr>';}
+  h+=panel('h-t','Měsíc po měsíci','Příjem, měsíční výsledek a rezerva. '+MODES[mode].n+'.',
+   tw('Měsíc po měsíci','<table><thead><tr><th>Měsíc</th><th>Fáze</th><th class="num">Příjem: doma otec</th><th class="num">Výsledek</th><th class="num">Rezerva</th><th class="num">Příjem: doma matka</th><th class="num">Výsledek</th><th class="num">Rezerva</th></tr></thead><tbody>'+tb+'</tbody></table>'));
+  /* závěr */
+  var rm=ms+mn2,ra=A.rows[Math.min(rm+1,A.rows.length-1)],rb=B.rows[Math.min(rm+1,B.rows.length-1)];
+  var li=[];
+  li.push('<b>Doma otec:</b> rezerva klesne nejníž na <b>'+mil(A.min)+'</b>'+(A.minT?' ('+ml(A.minT)+')':'')+'. Během rodičovského se mění o <b>'+sd(ra.d)+'</b> měsíčně.');
+  li.push('<b>Doma matka:</b> rezerva klesne nejníž na <b>'+mil(B.min)+'</b>'+(B.minT?' ('+ml(B.minT)+')':'')+'. Během rodičovského se mění o <b>'+sd(rb.d)+'</b> měsíčně.');
+  var out6=6*A.out;
+  [[A,'otec'],[B,'matka']].forEach(function(x){
+    if(x[0].neg!==null)li.push('<span class="neg">Pozor:</span> při variantě doma '+x[1]+' dojde rezerva v '+ml(x[0].neg)+' a domácnost by žila na dluh.');
+    else if(x[0].min<out6)li.push('Při variantě doma '+x[1]+' klesne rezerva pod šestinásobek měsíčních výdajů ('+kc(out6)+'). Pojistka na nečekané věci je pak slabá.');});
+  li.push('Výsledek ovlivňuje hlavně <b>kdo zůstane doma</b>: rozdíl v nejnižší rezervě mezi variantami je <b>'+mil(Math.abs(A.min-B.min))+'</b>.'+(L.cc>0?'':' Náklady na dítě jsou zadané 0 Kč, protože máte věci po prvním synovi. Zkuste vložit alespoň 3 000 Kč měsíčně na nečekané výdaje.'));
+  li.push('Model nezahrnuje úrok z rezervy, růst cen, vyšší sazbu po konci fixace ani poplatek za předčasné splacení.');
+  h+='<div class="verdict" style="margin:0"><h3>Co z toho plyne</h3><ul>'+li.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div><p class="note">Nejsem finanční poradce. Dávky a jejich výši ověřte na úřadě.</p>';
+  res.innerHTML=h;bind(ch);
+}
+res.addEventListener('change',function(e){if(e.target.id==='sp'){L.p=+e.target.value;saveL();render();}});
+res.addEventListener('click',function(e){var b=e.target.closest('[data-mode]');if(b){L.mode=b.dataset.mode;saveL();render();}});
+BY.onChange(function(){fill();render();});
+fill();render();
+window.DITE={run:run,L:L};
+})();
+</script>
+<script src="sync.js"></script>
+</body>
+</html>
