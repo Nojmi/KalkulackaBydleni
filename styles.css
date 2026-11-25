@@ -290,6 +290,7 @@ tr.sel td,tr.sel th{background:var(--acc-soft)}
 .chartbox svg text{fill:var(--mut);font-family:inherit;font-size:9px}
 .legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px;font-weight:600;margin-bottom:8px}
 .legend span{display:inline-flex;align-items:center;gap:8px}
+.legend .vh{min-width:0;max-width:100%;white-space:normal}
 .hz{display:flex;gap:6px;justify-content:flex-end;margin-bottom:8px;flex-wrap:wrap}
 .hz button{min-height:44px;padding:0 14px;border:1px solid var(--line);background:transparent;border-radius:12px;font-weight:600;font-size:14px;cursor:pointer;color:var(--mut)}
 .hz button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
